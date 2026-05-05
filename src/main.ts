@@ -1,5 +1,6 @@
 import { generateAcceptedPlate, drawPlate } from "./plate";
 import type { AcceptedPlateResult } from "./plate";
+import type { DeficiencyType } from "./cvd";
 import { scorePlate } from "./score";
 
 const app = document.getElementById("app")!;
@@ -15,9 +16,30 @@ info.textContent =
   "than with typical color vision.";
 app.appendChild(info);
 
-// --- Generate button ---
+// --- Controls ---
 const controls = document.createElement("div");
 controls.style.marginBottom = "1rem";
+controls.style.display = "flex";
+controls.style.gap = "0.5rem";
+controls.style.alignItems = "center";
+controls.style.flexWrap = "wrap";
+
+const deficiencySelect = document.createElement("select");
+deficiencySelect.style.fontSize = "1rem";
+deficiencySelect.style.padding = "0.4rem 0.6rem";
+const deficiencyOptions: Array<{ value: string; label: string }> = [
+  { value: "random", label: "Surprise me" },
+  { value: "protanopia", label: "Protanopia (red-blind)" },
+  { value: "deuteranopia", label: "Deuteranopia (green-blind)" },
+  { value: "tritanopia", label: "Tritanopia (blue-blind)" },
+];
+for (const opt of deficiencyOptions) {
+  const el = document.createElement("option");
+  el.value = opt.value;
+  el.textContent = opt.label;
+  deficiencySelect.appendChild(el);
+}
+controls.appendChild(deficiencySelect);
 
 const generateBtn = document.createElement("button");
 generateBtn.textContent = "Generate";
@@ -116,8 +138,17 @@ function render(plate: AcceptedPlateResult): void {
     ` | attempts: ${plate.attempts}`;
 }
 
+function getSelectedDeficiency(): DeficiencyType | undefined {
+  const val = deficiencySelect.value;
+  if (val === "random") return undefined;
+  return val as DeficiencyType;
+}
+
 generateBtn.addEventListener("click", () => {
-  const plate = generateAcceptedPlate({ size: PLATE_SIZE });
+  const plate = generateAcceptedPlate({
+    size: PLATE_SIZE,
+    deficiency: getSelectedDeficiency(),
+  });
   render(plate);
 });
 
@@ -128,4 +159,7 @@ revealBtn.addEventListener("click", () => {
 });
 
 // Generate an initial plate on load.
-render(generateAcceptedPlate({ size: PLATE_SIZE }));
+render(generateAcceptedPlate({
+  size: PLATE_SIZE,
+  deficiency: getSelectedDeficiency(),
+}));
