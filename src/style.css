@@ -1,0 +1,112 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 1rem;
+  background: #222;
+  color: #eee;
+  font-family: system-ui, sans-serif;
+}
+
+#app {
+  max-width: 1080px;
+  margin: 0 auto;
+}
+
+h1 {
+  margin: 0 0 0.5rem;
+  font-size: 1.5rem;
+}
+
+.info {
+  margin: 0 0 1rem;
+  color: #ccc;
+}
+
+.controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.controls select,
+.controls button {
+  font-size: 1rem;
+  padding: 0.4rem 0.8rem;
+  cursor: pointer;
+}
+
+.canvas-container {
+  display: flex;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.canvas-panel {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.canvas-panel canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.canvas-panel .caption {
+  text-align: center;
+  margin-top: 0.3rem;
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
+.reveal-container {
+  margin-top: 1rem;
+}
+
+.reveal-container button {
+  font-size: 1rem;
+  padding: 0.4rem 1.2rem;
+  cursor: pointer;
+}
+
+.reveal-container .reveal-text {
+  margin-left: 1rem;
+  font-size: 1.2rem;
+}
+
+.score-display {
+  margin-top: 1rem;
+  font-family: monospace;
+  font-size: 0.85rem;
+  color: #aaa;
+}
+
+@media (max-width: 640px) {
+  body {
+    padding: 0.5rem;
+  }
+
+  h1 {
+    font-size: 1.2rem;
+  }
+
+  .canvas-container {
+    flex-direction: column;
+  }
+
+  .canvas-panel {
+    flex: none;
+    width: 100%;
+  }
+
+  .reveal-container .reveal-text {
+    display: block;
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+}

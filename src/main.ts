@@ -1,3 +1,4 @@
+import "./style.css";
 import { generateAcceptedPlate, drawPlate } from "./plate";
 import type { AcceptedPlateResult } from "./plate";
 import type { DeficiencyType } from "./cvd";
@@ -11,6 +12,7 @@ heading.textContent = "Reverse Colorblindness Test";
 app.appendChild(heading);
 
 const info = document.createElement("p");
+info.className = "info";
 info.textContent =
   "A hidden digit is easier to read with color vision deficiency " +
   "than with typical color vision.";
@@ -18,15 +20,9 @@ app.appendChild(info);
 
 // --- Controls ---
 const controls = document.createElement("div");
-controls.style.marginBottom = "1rem";
-controls.style.display = "flex";
-controls.style.gap = "0.5rem";
-controls.style.alignItems = "center";
-controls.style.flexWrap = "wrap";
+controls.className = "controls";
 
 const deficiencySelect = document.createElement("select");
-deficiencySelect.style.fontSize = "1rem";
-deficiencySelect.style.padding = "0.4rem 0.6rem";
 const deficiencyOptions: Array<{ value: string; label: string }> = [
   { value: "random", label: "Surprise me" },
   { value: "protanopia", label: "Protanopia (red-blind)" },
@@ -43,65 +39,52 @@ controls.appendChild(deficiencySelect);
 
 const generateBtn = document.createElement("button");
 generateBtn.textContent = "Generate";
-generateBtn.style.fontSize = "1rem";
-generateBtn.style.padding = "0.4rem 1.2rem";
-generateBtn.style.cursor = "pointer";
 controls.appendChild(generateBtn);
 app.appendChild(controls);
 
 // --- Canvases ---
 const canvasContainer = document.createElement("div");
-canvasContainer.style.display = "flex";
-canvasContainer.style.gap = "1rem";
-canvasContainer.style.flexWrap = "wrap";
+canvasContainer.className = "canvas-container";
 
 const PLATE_SIZE = 500;
 
 // Trichromat view
-const trichLabel = document.createElement("div");
+const trichPanel = document.createElement("div");
+trichPanel.className = "canvas-panel";
 const trichCanvas = document.createElement("canvas");
 trichCanvas.width = PLATE_SIZE;
 trichCanvas.height = PLATE_SIZE;
-trichCanvas.style.maxWidth = "100%";
-trichCanvas.style.height = "auto";
 const trichCaption = document.createElement("div");
+trichCaption.className = "caption";
 trichCaption.textContent = "Trichromat view";
-trichCaption.style.textAlign = "center";
-trichCaption.style.marginTop = "0.3rem";
-trichLabel.appendChild(trichCanvas);
-trichLabel.appendChild(trichCaption);
+trichPanel.appendChild(trichCanvas);
+trichPanel.appendChild(trichCaption);
 
 // Simulated dichromat view
-const simLabel = document.createElement("div");
+const simPanel = document.createElement("div");
+simPanel.className = "canvas-panel";
 const simCanvas = document.createElement("canvas");
 simCanvas.width = PLATE_SIZE;
 simCanvas.height = PLATE_SIZE;
-simCanvas.style.maxWidth = "100%";
-simCanvas.style.height = "auto";
 const simCaption = document.createElement("div");
+simCaption.className = "caption";
 simCaption.textContent = "Simulated dichromat view";
-simCaption.style.textAlign = "center";
-simCaption.style.marginTop = "0.3rem";
-simLabel.appendChild(simCanvas);
-simLabel.appendChild(simCaption);
+simPanel.appendChild(simCanvas);
+simPanel.appendChild(simCaption);
 
-canvasContainer.appendChild(trichLabel);
-canvasContainer.appendChild(simLabel);
+canvasContainer.appendChild(trichPanel);
+canvasContainer.appendChild(simPanel);
 app.appendChild(canvasContainer);
 
 // --- Reveal ---
 const revealContainer = document.createElement("div");
-revealContainer.style.marginTop = "1rem";
+revealContainer.className = "reveal-container";
 
 const revealBtn = document.createElement("button");
 revealBtn.textContent = "Reveal answer";
-revealBtn.style.fontSize = "1rem";
-revealBtn.style.padding = "0.4rem 1.2rem";
-revealBtn.style.cursor = "pointer";
 
 const revealText = document.createElement("span");
-revealText.style.marginLeft = "1rem";
-revealText.style.fontSize = "1.2rem";
+revealText.className = "reveal-text";
 
 revealContainer.appendChild(revealBtn);
 revealContainer.appendChild(revealText);
@@ -109,10 +92,7 @@ app.appendChild(revealContainer);
 
 // --- Score display ---
 const scoreDisplay = document.createElement("div");
-scoreDisplay.style.marginTop = "1rem";
-scoreDisplay.style.fontFamily = "monospace";
-scoreDisplay.style.fontSize = "0.85rem";
-scoreDisplay.style.color = "#aaa";
+scoreDisplay.className = "score-display";
 app.appendChild(scoreDisplay);
 
 // --- State ---
