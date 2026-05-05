@@ -25,6 +25,41 @@ h1 {
   color: #ccc;
 }
 
+.mode-toggle {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1rem;
+}
+
+.mode-btn {
+  font-size: 1rem;
+  padding: 0.4rem 1.2rem;
+  cursor: pointer;
+  border: 1px solid #555;
+  background: #333;
+  color: #ccc;
+  transition: background 0.15s, color 0.15s;
+}
+
+.mode-btn:first-child {
+  border-radius: 4px 0 0 4px;
+}
+
+.mode-btn:last-child {
+  border-radius: 0 4px 4px 0;
+  border-left: none;
+}
+
+.mode-btn.active {
+  background: #5a9;
+  color: #fff;
+  border-color: #5a9;
+}
+
+.hidden {
+  display: none !important;
+}
+
 .controls {
   display: flex;
   gap: 0.5rem;
@@ -77,6 +112,23 @@ h1 {
 .reveal-container .reveal-text {
   margin-left: 1rem;
   font-size: 1.2rem;
+}
+
+.explanation {
+  margin-top: 1rem;
+  line-height: 1.5;
+  color: #ccc;
+  max-width: 700px;
+}
+
+.explanation .explanation-heading {
+  font-weight: bold;
+  color: #eee;
+  margin: 0 0 0.3rem;
+}
+
+.explanation p {
+  margin: 0 0 0.5rem;
 }
 
 .score-display {

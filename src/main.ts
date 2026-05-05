@@ -4,6 +4,25 @@ import type { AcceptedPlateResult } from "./plate";
 import type { DeficiencyType } from "./cvd";
 import { scorePlate } from "./score";
 
+type Mode = "test" | "learn";
+
+const deficiencyDescriptions: Record<string, string> = {
+  protanopia:
+    "Protanopia is a form of red-green color vision deficiency where the " +
+    "long-wavelength (red) cone photopigment is absent. People with protanopia " +
+    "cannot distinguish colors along the red-green axis, but perceive luminance " +
+    "and blue-yellow differences normally.",
+  deuteranopia:
+    "Deuteranopia is a form of red-green color vision deficiency where the " +
+    "medium-wavelength (green) cone photopigment is absent. It is the most " +
+    "common inherited color vision deficiency, affecting roughly 1% of males.",
+  tritanopia:
+    "Tritanopia is a blue-yellow color vision deficiency where the " +
+    "short-wavelength (blue) cone photopigment is absent. It is much rarer " +
+    "than red-green deficiencies and affects the blue-yellow axis rather than " +
+    "red-green.",
+};
+
 const app = document.getElementById("app")!;
 
 // --- Header ---
@@ -17,6 +36,22 @@ info.textContent =
   "A hidden digit is easier to read with color vision deficiency " +
   "than with typical color vision.";
 app.appendChild(info);
+
+// --- Mode toggle ---
+const modeToggle = document.createElement("div");
+modeToggle.className = "mode-toggle";
+
+const testModeBtn = document.createElement("button");
+testModeBtn.textContent = "Test";
+testModeBtn.className = "mode-btn active";
+
+const learnModeBtn = document.createElement("button");
+learnModeBtn.textContent = "Learn";
+learnModeBtn.className = "mode-btn";
+
+modeToggle.appendChild(testModeBtn);
+modeToggle.appendChild(learnModeBtn);
+app.appendChild(modeToggle);
 
 // --- Controls ---
 const controls = document.createElement("div");
@@ -56,7 +91,7 @@ trichCanvas.width = PLATE_SIZE;
 trichCanvas.height = PLATE_SIZE;
 const trichCaption = document.createElement("div");
 trichCaption.className = "caption";
-trichCaption.textContent = "Trichromat view";
+trichCaption.textContent = "What you see";
 trichPanel.appendChild(trichCanvas);
 trichPanel.appendChild(trichCaption);
 
@@ -75,6 +110,11 @@ simPanel.appendChild(simCaption);
 canvasContainer.appendChild(trichPanel);
 canvasContainer.appendChild(simPanel);
 app.appendChild(canvasContainer);
+
+// --- Educational explanation (learn mode only) ---
+const explanation = document.createElement("div");
+explanation.className = "explanation";
+app.appendChild(explanation);
 
 // --- Reveal ---
 const revealContainer = document.createElement("div");
@@ -97,6 +137,47 @@ app.appendChild(scoreDisplay);
 
 // --- State ---
 let currentPlate: AcceptedPlateResult | null = null;
+let currentMode: Mode = "test";
+
+function setMode(mode: Mode): void {
+  currentMode = mode;
+  testModeBtn.className = `mode-btn${mode === "test" ? " active" : ""}`;
+  learnModeBtn.className = `mode-btn${mode === "learn" ? " active" : ""}`;
+  applyMode();
+}
+
+function applyMode(): void {
+  if (currentMode === "test") {
+    simPanel.classList.add("hidden");
+    explanation.classList.add("hidden");
+    scoreDisplay.classList.add("hidden");
+    trichCaption.textContent = "Can you read the hidden digit?";
+  } else {
+    simPanel.classList.remove("hidden");
+    explanation.classList.remove("hidden");
+    scoreDisplay.classList.remove("hidden");
+    trichCaption.textContent = "What you see (typical color vision)";
+    updateExplanation();
+  }
+}
+
+function updateExplanation(): void {
+  if (!currentPlate) {
+    explanation.textContent = "";
+    return;
+  }
+  const deficiency = currentPlate.deficiency;
+  const desc = deficiencyDescriptions[deficiency] || "";
+  explanation.innerHTML =
+    `<p class="explanation-heading">How this plate works</p>` +
+    `<p>${desc}</p>` +
+    `<p>The background dots are colored along the confusion line for ` +
+    `${deficiency} — colors that look identical to someone with this ` +
+    `deficiency but varied to a typical viewer. The figure dots differ in ` +
+    `luminance and saturation along an axis the deficient viewer can still ` +
+    `perceive. The result: chromatic noise masks the figure for typical ` +
+    `vision, but collapses away for the target deficiency, revealing the digit.</p>`;
+}
 
 function render(plate: AcceptedPlateResult): void {
   currentPlate = plate;
@@ -116,6 +197,9 @@ function render(plate: AcceptedPlateResult): void {
     `| dichromat: ${score.dichromat.toFixed(1)} ` +
     `| ratio: ${score.ratio.toFixed(2)}x` +
     ` | attempts: ${plate.attempts}`;
+
+  updateExplanation();
+  applyMode();
 }
 
 function getSelectedDeficiency(): DeficiencyType | undefined {
@@ -123,6 +207,9 @@ function getSelectedDeficiency(): DeficiencyType | undefined {
   if (val === "random") return undefined;
   return val as DeficiencyType;
 }
+
+testModeBtn.addEventListener("click", () => setMode("test"));
+learnModeBtn.addEventListener("click", () => setMode("learn"));
 
 generateBtn.addEventListener("click", () => {
   const plate = generateAcceptedPlate({
