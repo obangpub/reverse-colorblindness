@@ -1,5 +1,6 @@
 import { generatePlate, drawPlate } from "./plate";
 import type { PlateResult } from "./plate";
+import { scorePlate } from "./score";
 
 const app = document.getElementById("app")!;
 
@@ -84,6 +85,14 @@ revealContainer.appendChild(revealBtn);
 revealContainer.appendChild(revealText);
 app.appendChild(revealContainer);
 
+// --- Score display ---
+const scoreDisplay = document.createElement("div");
+scoreDisplay.style.marginTop = "1rem";
+scoreDisplay.style.fontFamily = "monospace";
+scoreDisplay.style.fontSize = "0.85rem";
+scoreDisplay.style.color = "#aaa";
+app.appendChild(scoreDisplay);
+
 // --- State ---
 let currentPlate: PlateResult | null = null;
 
@@ -98,6 +107,12 @@ function render(plate: PlateResult): void {
   drawPlate(simCtx, plate, true);
 
   simCaption.textContent = `Simulated ${plate.deficiency} view`;
+
+  const score = scorePlate(plate.dots, plate.deficiency);
+  scoreDisplay.textContent =
+    `Visibility — trichromat: ${score.trichromat.toFixed(1)} ` +
+    `| dichromat: ${score.dichromat.toFixed(1)} ` +
+    `| ratio: ${score.ratio.toFixed(2)}x`;
 }
 
 generateBtn.addEventListener("click", () => {
