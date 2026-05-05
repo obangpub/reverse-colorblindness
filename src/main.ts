@@ -1,5 +1,5 @@
-import { generatePlate, drawPlate } from "./plate";
-import type { PlateResult } from "./plate";
+import { generateAcceptedPlate, drawPlate } from "./plate";
+import type { AcceptedPlateResult } from "./plate";
 import { scorePlate } from "./score";
 
 const app = document.getElementById("app")!;
@@ -94,9 +94,9 @@ scoreDisplay.style.color = "#aaa";
 app.appendChild(scoreDisplay);
 
 // --- State ---
-let currentPlate: PlateResult | null = null;
+let currentPlate: AcceptedPlateResult | null = null;
 
-function render(plate: PlateResult): void {
+function render(plate: AcceptedPlateResult): void {
   currentPlate = plate;
   revealText.textContent = "";
 
@@ -112,11 +112,12 @@ function render(plate: PlateResult): void {
   scoreDisplay.textContent =
     `Visibility — trichromat: ${score.trichromat.toFixed(1)} ` +
     `| dichromat: ${score.dichromat.toFixed(1)} ` +
-    `| ratio: ${score.ratio.toFixed(2)}x`;
+    `| ratio: ${score.ratio.toFixed(2)}x` +
+    ` | attempts: ${plate.attempts}`;
 }
 
 generateBtn.addEventListener("click", () => {
-  const plate = generatePlate({ size: PLATE_SIZE });
+  const plate = generateAcceptedPlate({ size: PLATE_SIZE });
   render(plate);
 });
 
@@ -127,4 +128,4 @@ revealBtn.addEventListener("click", () => {
 });
 
 // Generate an initial plate on load.
-render(generatePlate({ size: PLATE_SIZE }));
+render(generateAcceptedPlate({ size: PLATE_SIZE }));
