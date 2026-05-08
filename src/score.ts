@@ -149,3 +149,91 @@ export function scorePlate(
 
   return { trichromat, dichromat, ratio };
 }
+
+/** A "viewer" perspective for readability scoring. */
+export type Viewer = "trichromat" | DeficiencyType;
+
+export interface ReadabilityScore {
+  /** Mean deltaE between figure dots and their K nearest background neighbors. */
+  signal: number;
+  /** Mean deltaE between background dots and their K nearest other-background neighbors. */
+  noise: number;
+  /** signal / noise. Ratio above ~2 means the figure stands out from background variation. */
+  snr: number;
+}
+
+/**
+ * Score how readable the hidden figure is to a given viewer.
+ *
+ * deltaE alone tells us how different a figure dot is from its neighbors,
+ * but the reverse-Ishihara plate works by camouflaging the figure inside
+ * chromatic noise of comparable magnitude. The figure becomes legible
+ * only when the noise collapses for the right viewer. Signal-to-noise
+ * ratio captures this: signal = figure-to-background deltaE, noise =
+ * background-to-background deltaE in the same viewer's color space.
+ *
+ * For a target dichromat the confusion noise collapses, so noise ≈ 0
+ * and SNR is large. For a trichromat the noise is fully visible, so
+ * signal and noise are comparable and SNR ≈ 1.
+ */
+export function readabilityScore(
+  dots: ColoredDot[],
+  viewer: Viewer,
+  k: number = 6,
+): ReadabilityScore {
+  const figureDots = dots.filter((d) => d.isFigure);
+  const bgDots = dots.filter((d) => !d.isFigure);
+
+  if (figureDots.length === 0 || bgDots.length < 2) {
+    return { signal: 0, noise: 0, snr: 0 };
+  }
+
+  const labOf = (rgb: RGB): Lab =>
+    viewer === "trichromat"
+      ? rgbToLab(rgb)
+      : rgbToLab(simulateCVD(rgb, viewer));
+
+  const bgLabs = bgDots.map((d) => labOf(d.color));
+
+  // Signal: figure dot vs its K nearest background neighbors.
+  let signalSum = 0;
+  for (const fd of figureDots) {
+    const fdLab = labOf(fd.color);
+    const dists = bgDots.map((bd, i) => ({
+      idx: i,
+      dist2: (fd.x - bd.x) ** 2 + (fd.y - bd.y) ** 2,
+    }));
+    dists.sort((a, b) => a.dist2 - b.dist2);
+    const neighbors = dists.slice(0, Math.min(k, dists.length));
+    let s = 0;
+    for (const n of neighbors) s += deltaE(fdLab, bgLabs[n.idx]!);
+    signalSum += s / neighbors.length;
+  }
+  const signal = signalSum / figureDots.length;
+
+  // Noise: background dot vs its K nearest other-background neighbors.
+  let noiseSum = 0;
+  for (let i = 0; i < bgDots.length; i++) {
+    const bd = bgDots[i]!;
+    const bdLab = bgLabs[i]!;
+    const dists: { idx: number; dist2: number }[] = [];
+    for (let j = 0; j < bgDots.length; j++) {
+      if (j === i) continue;
+      const ob = bgDots[j]!;
+      dists.push({
+        idx: j,
+        dist2: (bd.x - ob.x) ** 2 + (bd.y - ob.y) ** 2,
+      });
+    }
+    dists.sort((a, b) => a.dist2 - b.dist2);
+    const neighbors = dists.slice(0, Math.min(k, dists.length));
+    let s = 0;
+    for (const n of neighbors) s += deltaE(bdLab, bgLabs[n.idx]!);
+    noiseSum += s / neighbors.length;
+  }
+  const noise = noiseSum / bgDots.length;
+
+  // Floor noise to avoid blow-up when confusion collapses near-perfectly.
+  const snr = signal / Math.max(noise, 0.1);
+  return { signal, noise, snr };
+}

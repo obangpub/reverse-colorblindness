@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Claude
+.claude/
+.claude.json
+CLAUDE.md
+
+# Prompts and Ralph loop
+PROMPT.md
+RALPH.md
+NOTES.md
+QUESTIONS.md
+TODO.md

@@ -3,6 +3,8 @@ import { generateAcceptedPlate, drawPlate } from "./plate";
 import type { AcceptedPlateResult } from "./plate";
 import type { DeficiencyType } from "./cvd";
 import { scorePlate } from "./score";
+import { createResults, generatePlaceholderRecords } from "./results";
+import { runCalibration, formatCalibrationReport } from "./calibrate";
 
 type Mode = "test" | "learn";
 
@@ -135,6 +137,78 @@ const scoreDisplay = document.createElement("div");
 scoreDisplay.className = "score-display";
 app.appendChild(scoreDisplay);
 
+// --- Test results (placeholder data until scoring is wired up) ---
+const resultsContainer = document.createElement("div");
+resultsContainer.className = "results-container";
+
+const resultsHeading = document.createElement("h2");
+resultsHeading.textContent = "Your test results";
+resultsContainer.appendChild(resultsHeading);
+
+let resultsBody = createResults();
+resultsContainer.appendChild(resultsBody);
+
+const resultsCaption = document.createElement("p");
+resultsCaption.className = "results-caption";
+resultsCaption.textContent =
+  "Each row records your responses on one axis of the test. The swatch " +
+  "pair shows two colors that look identical to viewers along that " +
+  "confusion line. The bar's two stripes start as those distinct colors " +
+  "(left, what a trichromat sees) and fade into a single tone (right, " +
+  "what a dichromat sees) — so the bar itself demonstrates the " +
+  "collapse. Click any plate thumbnail to view it at full size and " +
+  "toggle between trichromat and simulated views. " +
+  "For educational purposes — not a clinical assessment.";
+resultsContainer.appendChild(resultsCaption);
+
+app.appendChild(resultsContainer);
+
+// Generate a placeholder plate battery after first paint so initial load
+// stays responsive. Real flow will populate from a completed test session.
+setTimeout(() => {
+  const records = generatePlaceholderRecords();
+  const populated = createResults({
+    rgRecords: records.rg,
+    byRecords: records.by,
+  });
+  resultsContainer.replaceChild(populated, resultsBody);
+  resultsBody = populated;
+}, 50);
+
+// --- Calibration debug panel ---
+const calibContainer = document.createElement("div");
+calibContainer.className = "calib-container";
+
+const calibHeading = document.createElement("h2");
+calibHeading.textContent = "Calibration (debug)";
+calibContainer.appendChild(calibHeading);
+
+const calibBtn = document.createElement("button");
+calibBtn.textContent = "Run calibration";
+calibContainer.appendChild(calibBtn);
+
+const calibOutput = document.createElement("pre");
+calibOutput.className = "calib-output";
+calibContainer.appendChild(calibOutput);
+
+calibBtn.addEventListener("click", () => {
+  calibBtn.disabled = true;
+  calibBtn.textContent = "Running...";
+  calibOutput.textContent = "";
+  // Defer so the button state renders before the synchronous work begins.
+  setTimeout(() => {
+    const t0 = performance.now();
+    const result = runCalibration();
+    const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+    calibOutput.textContent =
+      formatCalibrationReport(result) + `\n\n(${elapsed}s)`;
+    calibBtn.disabled = false;
+    calibBtn.textContent = "Run calibration";
+  }, 50);
+});
+
+app.appendChild(calibContainer);
+
 // --- State ---
 let currentPlate: AcceptedPlateResult | null = null;
 let currentMode: Mode = "test";
@@ -144,6 +218,7 @@ function setMode(mode: Mode): void {
   testModeBtn.className = `mode-btn${mode === "test" ? " active" : ""}`;
   learnModeBtn.className = `mode-btn${mode === "learn" ? " active" : ""}`;
   applyMode();
+  updatePlateDisplaySize();
 }
 
 function applyMode(): void {
@@ -158,6 +233,33 @@ function applyMode(): void {
     scoreDisplay.classList.remove("hidden");
     trichCaption.textContent = "What you see (typical color vision)";
     updateExplanation();
+  }
+}
+
+function updatePlateDisplaySize(): void {
+  const HORIZONTAL_PADDING = 32;
+  const PANEL_GAP = 16;
+  const RESERVED_VERTICAL = 260;
+  const MIN_SIZE = 200;
+  const MAX_SIZE = 600;
+
+  const isWide = window.innerWidth > 640;
+  const showingBoth = currentMode === "learn";
+
+  const availWidth = window.innerWidth - HORIZONTAL_PADDING;
+  const availHeight = window.innerHeight - RESERVED_VERTICAL;
+
+  const widthBudget =
+    showingBoth && isWide ? (availWidth - PANEL_GAP) / 2 : availWidth;
+
+  const size = Math.max(
+    MIN_SIZE,
+    Math.min(widthBudget, availHeight, MAX_SIZE),
+  );
+
+  for (const canvas of [trichCanvas, simCanvas]) {
+    canvas.style.width = `${size}px`;
+    canvas.style.height = `${size}px`;
   }
 }
 
@@ -210,6 +312,9 @@ function getSelectedDeficiency(): DeficiencyType | undefined {
 
 testModeBtn.addEventListener("click", () => setMode("test"));
 learnModeBtn.addEventListener("click", () => setMode("learn"));
+
+window.addEventListener("resize", updatePlateDisplaySize);
+updatePlateDisplaySize();
 
 generateBtn.addEventListener("click", () => {
   const plate = generateAcceptedPlate({

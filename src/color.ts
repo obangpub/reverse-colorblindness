@@ -54,24 +54,39 @@ function confusionDirection(matrix: readonly number[]): Vec3 {
 }
 
 /**
- * Compute a signal direction orthogonal to the confusion line that
- * produces a difference dichromats can perceive.
+ * Blend factor between pure-orthogonal-luminance and pure luminance for
+ * the figure signal direction. 0 = pure orthogonal (math-clean: signal
+ * lies fully in the dichromat's perceivable space and entirely outside
+ * the confusion direction). 1 = pure luminance (perceptually most
+ * salient, since human luminance acuity is high; but introduces a
+ * parallel component that collapses for the dichromat — wasting signal
+ * — and reads as extra chromatic variation to trichromats). Intermediate
+ * values trade selectivity for salience.
+ */
+const SIGNAL_LUMINANCE_BLEND = 0;
+
+/**
+ * Compute a signal direction the dichromat can perceive.
  *
- * Projects the luminance axis onto the plane orthogonal to the confusion
- * direction. The resulting vector represents a luminance-ish shift that
- * survives simulation and serves as the figure-background signal.
+ * Starts from the projection of luminance onto the plane orthogonal to
+ * the confusion direction (the most luminance-rich direction that fully
+ * survives simulation). Optionally blends in some pure luminance for
+ * perceptual punch at the cost of a small parallel component.
  */
 function signalDirection(confDir: Vec3): Vec3 {
-  // sRGB luminance coefficients (linear space)
   const lum: Vec3 = [0.2126, 0.7152, 0.0722];
-  // Remove the component along the confusion direction
   const proj = vecDot(lum, confDir);
   const ortho: Vec3 = [
     lum[0] - proj * confDir[0],
     lum[1] - proj * confDir[1],
     lum[2] - proj * confDir[2],
   ];
-  return normalize(ortho);
+  const b = SIGNAL_LUMINANCE_BLEND;
+  return normalize([
+    (1 - b) * ortho[0] + b * lum[0],
+    (1 - b) * ortho[1] + b * lum[1],
+    (1 - b) * ortho[2] + b * lum[2],
+  ]);
 }
 
 // Precompute per-deficiency directions in linear RGB space.
@@ -115,7 +130,7 @@ export interface PlateColorOptions {
 const DEFAULTS = {
   baseColor: { r: 0.55, g: 0.45, b: 0.40 } as RGB,
   confusionAmplitude: 0.15,
-  signalAmplitude: 0.08,
+  signalAmplitude: 0.12,
 };
 
 function clamp01(x: number): number {
@@ -182,4 +197,33 @@ export function colorDots(
 
     return { ...d, color, isFigure };
   });
+}
+
+/**
+ * Sample two colors that lie symmetrically along a deficiency's confusion
+ * line through `base`. To viewers without that deficiency, the two colors
+ * appear distinct; to viewers with it, they collapse to nearly the same
+ * color. Used by the radar chart to demonstrate each axis visually.
+ *
+ * The returned pair is unordered with respect to canonical color names
+ * (red/green, blue/yellow); the caller decides which is which based on
+ * the resulting RGB values.
+ */
+export function confusionPair(
+  deficiency: DeficiencyType,
+  base: RGB = { r: 0.55, g: 0.45, b: 0.40 },
+  amplitude: number = 0.5,
+): [RGB, RGB] {
+  const dir = CONFUSION_DIRS[deficiency];
+  const baseLin: Vec3 = [
+    srgbToLinear(base.r),
+    srgbToLinear(base.g),
+    srgbToLinear(base.b),
+  ];
+  const sample = (sign: number): RGB => ({
+    r: linearToSrgb(clamp01(baseLin[0] + sign * amplitude * dir[0])),
+    g: linearToSrgb(clamp01(baseLin[1] + sign * amplitude * dir[1])),
+    b: linearToSrgb(clamp01(baseLin[2] + sign * amplitude * dir[2])),
+  });
+  return [sample(+1), sample(-1)];
 }
