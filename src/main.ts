@@ -8,6 +8,11 @@ import { runCalibration, formatCalibrationReport } from "./calibrate";
 
 type Mode = "test" | "learn";
 
+// Dev-only UI (visibility scores, results placeholder, calibration panel)
+// is gated behind a URL flag: append `?dev` to the address bar to enable.
+// Keeps the wiring intact without exposing it to end users.
+const DEV_MODE = new URLSearchParams(window.location.search).has("dev");
+
 const deficiencyDescriptions: Record<string, string> = {
   protanopia:
     "Protanopia is a form of red-green color vision deficiency where the " +
@@ -132,82 +137,88 @@ revealContainer.appendChild(revealBtn);
 revealContainer.appendChild(revealText);
 app.appendChild(revealContainer);
 
-// --- Score display ---
+// --- Score display (dev only) ---
 const scoreDisplay = document.createElement("div");
 scoreDisplay.className = "score-display";
-app.appendChild(scoreDisplay);
+if (DEV_MODE) app.appendChild(scoreDisplay);
 
-// --- Test results (placeholder data until scoring is wired up) ---
-const resultsContainer = document.createElement("div");
-resultsContainer.className = "results-container";
+// --- Test results placeholder (dev only) ---
+// The results visualization will be driven by real test sessions once the
+// test flow ships. Until then, only show under DEV_MODE so end users
+// don't see a fake results panel.
+if (DEV_MODE) {
+  const resultsContainer = document.createElement("div");
+  resultsContainer.className = "results-container";
 
-const resultsHeading = document.createElement("h2");
-resultsHeading.textContent = "Your test results";
-resultsContainer.appendChild(resultsHeading);
+  const resultsHeading = document.createElement("h2");
+  resultsHeading.textContent = "Your test results";
+  resultsContainer.appendChild(resultsHeading);
 
-let resultsBody = createResults();
-resultsContainer.appendChild(resultsBody);
+  let resultsBody = createResults();
+  resultsContainer.appendChild(resultsBody);
 
-const resultsCaption = document.createElement("p");
-resultsCaption.className = "results-caption";
-resultsCaption.textContent =
-  "Each row records your responses on one axis of the test. The swatch " +
-  "pair shows two colors that look identical to viewers along that " +
-  "confusion line. The bar's two stripes start as those distinct colors " +
-  "(left, what a trichromat sees) and fade into a single tone (right, " +
-  "what a dichromat sees) — so the bar itself demonstrates the " +
-  "collapse. Click any plate thumbnail to view it at full size and " +
-  "toggle between trichromat and simulated views. " +
-  "For educational purposes — not a clinical assessment.";
-resultsContainer.appendChild(resultsCaption);
+  const resultsCaption = document.createElement("p");
+  resultsCaption.className = "results-caption";
+  resultsCaption.textContent =
+    "Each row records your responses on one axis of the test. The swatch " +
+    "pair shows two colors that look identical to viewers along that " +
+    "confusion line. The bar's two stripes start as those distinct colors " +
+    "(left, what a trichromat sees) and fade into a single tone (right, " +
+    "what a dichromat sees) — so the bar itself demonstrates the " +
+    "collapse. Click any plate thumbnail to view it at full size and " +
+    "toggle between trichromat and simulated views. " +
+    "For educational purposes — not a clinical assessment.";
+  resultsContainer.appendChild(resultsCaption);
 
-app.appendChild(resultsContainer);
+  app.appendChild(resultsContainer);
 
-// Generate a placeholder plate battery after first paint so initial load
-// stays responsive. Real flow will populate from a completed test session.
-setTimeout(() => {
-  const records = generatePlaceholderRecords();
-  const populated = createResults({
-    rgRecords: records.rg,
-    byRecords: records.by,
-  });
-  resultsContainer.replaceChild(populated, resultsBody);
-  resultsBody = populated;
-}, 50);
-
-// --- Calibration debug panel ---
-const calibContainer = document.createElement("div");
-calibContainer.className = "calib-container";
-
-const calibHeading = document.createElement("h2");
-calibHeading.textContent = "Calibration (debug)";
-calibContainer.appendChild(calibHeading);
-
-const calibBtn = document.createElement("button");
-calibBtn.textContent = "Run calibration";
-calibContainer.appendChild(calibBtn);
-
-const calibOutput = document.createElement("pre");
-calibOutput.className = "calib-output";
-calibContainer.appendChild(calibOutput);
-
-calibBtn.addEventListener("click", () => {
-  calibBtn.disabled = true;
-  calibBtn.textContent = "Running...";
-  calibOutput.textContent = "";
-  // Defer so the button state renders before the synchronous work begins.
+  // Generate a placeholder plate battery after first paint so initial load
+  // stays responsive. Real flow will populate from a completed test session.
   setTimeout(() => {
-    const t0 = performance.now();
-    const result = runCalibration();
-    const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
-    calibOutput.textContent =
-      formatCalibrationReport(result) + `\n\n(${elapsed}s)`;
-    calibBtn.disabled = false;
-    calibBtn.textContent = "Run calibration";
+    const records = generatePlaceholderRecords();
+    const populated = createResults({
+      rgRecords: records.rg,
+      byRecords: records.by,
+    });
+    resultsContainer.replaceChild(populated, resultsBody);
+    resultsBody = populated;
   }, 50);
-});
+}
 
-app.appendChild(calibContainer);
+// --- Calibration debug panel (dev only) ---
+if (DEV_MODE) {
+  const calibContainer = document.createElement("div");
+  calibContainer.className = "calib-container";
+
+  const calibHeading = document.createElement("h2");
+  calibHeading.textContent = "Calibration (debug)";
+  calibContainer.appendChild(calibHeading);
+
+  const calibBtn = document.createElement("button");
+  calibBtn.textContent = "Run calibration";
+  calibContainer.appendChild(calibBtn);
+
+  const calibOutput = document.createElement("pre");
+  calibOutput.className = "calib-output";
+  calibContainer.appendChild(calibOutput);
+
+  calibBtn.addEventListener("click", () => {
+    calibBtn.disabled = true;
+    calibBtn.textContent = "Running...";
+    calibOutput.textContent = "";
+    setTimeout(() => {
+      const t0 = performance.now();
+      const result = runCalibration();
+      const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
+      calibOutput.textContent =
+        formatCalibrationReport(result) + `\n\n(${elapsed}s)`;
+      calibBtn.disabled = false;
+      calibBtn.textContent = "Run calibration";
+    }, 50);
+  });
+
+  app.appendChild(calibContainer);
+}
 
 // --- State ---
 let currentPlate: AcceptedPlateResult | null = null;
