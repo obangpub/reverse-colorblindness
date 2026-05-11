@@ -128,9 +128,9 @@ export interface PlateColorOptions {
 }
 
 const DEFAULTS = {
-  baseColor: { r: 0.55, g: 0.45, b: 0.40 } as RGB,
-  confusionAmplitude: 0.15,
-  signalAmplitude: 0.12,
+  baseColor: { r: 0.55, g: 0.45, b: 0.55 } as RGB,
+  confusionAmplitude: 0.22,
+  signalAmplitude: 0.08,
 };
 
 function clamp01(x: number): number {
