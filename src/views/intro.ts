@@ -9,6 +9,7 @@ import { generateExamplePlate, drawPlate } from "../plate";
 export interface IntroCallbacks {
   onStart: () => void;
   onExplore: () => void;
+  onAbout: () => void;
 }
 
 export function mount(
@@ -28,9 +29,10 @@ export function mount(
   lede.textContent =
     "A short test — 24 plates, three to five minutes. Each plate hides " +
     "a digit that's easier to see if you're colorblind in certain ways. " +
-    "Most people with typical color vision can't see them at all. " +
-    "We'll show you where your color vision sits between typical and " +
-    "fully colorblind.";
+    "Most people with typical color vision can't see them at all. For " +
+    "each axis of the test, we'll show how many plates you read — " +
+    "compared to someone with the strongest form of the matching " +
+    "deficiency, who would read them all.";
   root.appendChild(lede);
 
   const example = document.createElement("section");
@@ -92,6 +94,12 @@ export function mount(
   actions.appendChild(exploreBtn);
 
   root.appendChild(actions);
+
+  const aboutLink = document.createElement("button");
+  aboutLink.className = "intro-about-link";
+  aboutLink.textContent = "About this test";
+  aboutLink.addEventListener("click", callbacks.onAbout);
+  root.appendChild(aboutLink);
 
   host.appendChild(root);
   heading.focus();

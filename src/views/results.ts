@@ -59,11 +59,11 @@ function describeChoice(r: Response): string {
 function plainDeficiencyName(d: DeficiencyType): string {
   switch (d) {
     case "protanopia":
-      return "red-blind";
+      return "red-green (protan)";
     case "deuteranopia":
-      return "green-blind";
+      return "red-green (deutan)";
     case "tritanopia":
-      return "blue-yellow blind";
+      return "blue-yellow (tritan)";
   }
 }
 
@@ -104,7 +104,7 @@ function createModal(): PlateModal {
   triBtn.className = "plate-modal-toggle-btn active";
 
   const simBtn = document.createElement("button");
-  simBtn.textContent = "How a colorblind viewer sees it";
+  simBtn.textContent = "Simulated view";
   simBtn.className = "plate-modal-toggle-btn";
 
   toggle.appendChild(triBtn);
@@ -193,6 +193,7 @@ function createModal(): PlateModal {
       currentResponse = response;
       const def = response.item.plate.deficiency;
       title.textContent = `Hidden digit: ${response.item.plate.character} — ${plainDeficiencyName(def)} plate`;
+      simBtn.textContent = `Simulated ${plainDeficiencyName(def)} view`;
 
       const status = response.correct ? "Read correctly" : "Not read";
       const choice = describeChoice(response);
@@ -319,7 +320,7 @@ function makeRow(spec: RowSpec, modal: PlateModal): HTMLDivElement {
 
   const left = document.createElement("span");
   left.className = "result-bar-endpoint result-bar-endpoint-left";
-  left.textContent = "Trichromat";
+  left.textContent = "None read";
   bar.appendChild(left);
 
   const track = document.createElement("div");
@@ -364,7 +365,7 @@ function makeRow(spec: RowSpec, modal: PlateModal): HTMLDivElement {
 
   const right = document.createElement("span");
   right.className = "result-bar-endpoint result-bar-endpoint-right";
-  right.textContent = "Dichromat";
+  right.textContent = "All read";
   bar.appendChild(right);
 
   row.appendChild(bar);
@@ -448,17 +449,18 @@ export function mount(
   const caption = document.createElement("p");
   caption.className = "results-caption";
   caption.textContent =
-    "Each row shows your results for one part of the test. The two " +
-    "swatch colors are what gets confused along that axis — they look " +
-    "identical to a colorblind viewer. The bar shows what happens to " +
-    "those colors as vision shifts toward colorblindness: on the left, " +
-    "the two colors look distinct (what a typical viewer sees); on " +
-    "the right, they merge into one (what a colorblind viewer sees). " +
-    "The shaded band shows how much uncertainty is in your score; the " +
-    "white line is your best estimate. Click any plate to see it in " +
-    "full size and toggle between what you see and what a colorblind " +
-    "viewer sees. This is for learning about color vision, not for " +
-    "diagnosing anything.";
+    "Each row shows your results for one axis. The two swatch colors " +
+    "are what gets confused along that axis — they look identical to " +
+    "a viewer with the matching dichromacy. The bar's gradient shows " +
+    "those colors collapsing from distinct (left, typical view) to " +
+    "merged (right, dichromat view). The white marker is your score " +
+    "on this axis; the shaded band shows its uncertainty. A score " +
+    "near 'All read' means you read these plates the way a dichromat " +
+    "would — but it doesn't mean your vision is dichromatic, since " +
+    "milder, more common deficiencies often score close to 'None " +
+    "read' even when present. Click any plate to see it full size and " +
+    "toggle between views. This is for learning about color vision, " +
+    "not for diagnosing anything.";
   root.appendChild(caption);
 
   const actions = document.createElement("div");

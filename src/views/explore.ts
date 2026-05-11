@@ -23,7 +23,10 @@ const deficiencyDescriptions: Record<string, string> = {
   deuteranopia:
     "Deuteranopia is a form of red-green color vision deficiency where the " +
     "medium-wavelength (green) cone photopigment is absent. It is the most " +
-    "common inherited color vision deficiency, affecting roughly 1% of males.",
+    "common form of dichromacy, affecting roughly 1% of males. The milder " +
+    "anomalous form, deuteranomaly, is more common still — around 5% of " +
+    "males — and is the most prevalent inherited color vision deficiency " +
+    "overall.",
   tritanopia:
     "Tritanopia is a blue-yellow color vision deficiency where the " +
     "short-wavelength (blue) cone photopigment is absent. It is much rarer " +
@@ -101,9 +104,9 @@ export function mount(
   deficiencySelect.id = "deficiency-select";
   const deficiencyOptions: Array<{ value: string; label: string }> = [
     { value: "random", label: "Surprise me" },
-    { value: "protanopia", label: "Red-blind (protanopia)" },
-    { value: "deuteranopia", label: "Green-blind (deuteranopia)" },
-    { value: "tritanopia", label: "Blue-yellow blind (tritanopia)" },
+    { value: "protanopia", label: "Protanopia (red-green type)" },
+    { value: "deuteranopia", label: "Deuteranopia (red-green type)" },
+    { value: "tritanopia", label: "Tritanopia (blue-yellow type)" },
   ];
   for (const opt of deficiencyOptions) {
     const el = document.createElement("option");
@@ -245,10 +248,11 @@ export function mount(
       `<p>${desc}</p>` +
       `<p>The background dots are colored along the confusion line for ` +
       `${deficiency} — colors that look identical to someone with this ` +
-      `deficiency but varied to a typical viewer. The figure dots differ in ` +
-      `luminance and saturation along an axis the deficient viewer can still ` +
-      `perceive. The result: chromatic noise masks the figure for typical ` +
-      `vision, but collapses away for the target deficiency, revealing the digit.</p>`;
+      `deficiency but varied to a typical viewer. The figure dots are ` +
+      `offset perpendicular to that line, in chromatic dimensions the ` +
+      `affected viewer can still discriminate. The result: chromatic ` +
+      `noise masks the figure for typical vision, but collapses away for ` +
+      `the target deficiency, revealing the digit.</p>`;
   }
 
   function render(plate: AcceptedPlateResult): void {

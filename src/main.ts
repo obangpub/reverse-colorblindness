@@ -15,6 +15,7 @@ import * as introView from "./views/intro";
 import * as runnerView from "./views/runner";
 import * as resultsView from "./views/results";
 import * as exploreView from "./views/explore";
+import * as aboutView from "./views/about";
 import type { TestSession } from "./test-session";
 import {
   newSession,
@@ -23,7 +24,7 @@ import {
 } from "./test-session";
 import { runCalibration, formatCalibrationReport } from "./calibrate";
 
-type View = "intro" | "running" | "results" | "explore";
+type View = "intro" | "running" | "results" | "explore" | "about";
 
 const DEV_MODE = new URLSearchParams(window.location.search).has("dev");
 
@@ -71,6 +72,7 @@ function navigate(next: View, session?: TestSession): void {
       currentUnmount = introView.mount(app, {
         onStart: () => navigate("running", newSession()),
         onExplore: () => navigate("explore"),
+        onAbout: () => navigate("about"),
       });
       break;
 
@@ -101,6 +103,12 @@ function navigate(next: View, session?: TestSession): void {
       currentUnmount = exploreView.mount(app, {
         onBackToTest: () => navigate("intro"),
         showDevPanel: DEV_MODE,
+      });
+      break;
+
+    case "about":
+      currentUnmount = aboutView.mount(app, {
+        onBack: () => navigate("intro"),
       });
       break;
   }
