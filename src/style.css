@@ -29,6 +29,40 @@ h1 {
   display: none !important;
 }
 
+/* Visually hidden but readable by screen readers and assistive tech. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Don't paint a stray focus outline around the 1x1 sr-only element when
+   focus is moved to it programmatically (e.g., on view transitions). */
+.sr-only:focus {
+  outline: none;
+}
+
+/* Honor user preference: skip motion-heavy transitions. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+
+  .runner-plate-container.fading {
+    opacity: 1 !important;
+  }
+}
+
 /* ==========================================================================
    Buttons (shared)
    ========================================================================== */
@@ -37,6 +71,7 @@ h1 {
 .btn-secondary {
   font-size: 1rem;
   padding: 0.6rem 1.4rem;
+  min-height: 44px;
   cursor: pointer;
   border-radius: 4px;
   border: 1px solid transparent;
@@ -199,7 +234,8 @@ h1 {
   color: #888;
   font-size: 0.85rem;
   cursor: pointer;
-  padding: 0.3rem 0.5rem;
+  padding: 0.6rem 0.75rem;
+  min-height: 44px;
   text-decoration: underline;
   flex-shrink: 0;
 }
@@ -513,8 +549,8 @@ h1 {
   color: #ccc;
   font-size: 1.6rem;
   cursor: pointer;
-  width: 2rem;
-  height: 2rem;
+  width: 44px;
+  height: 44px;
   line-height: 1;
   padding: 0;
 }
@@ -538,7 +574,8 @@ h1 {
 .plate-modal-toggle-btn {
   flex: 1;
   font-size: 0.9rem;
-  padding: 0.4rem 0.8rem;
+  padding: 0.6rem 1rem;
+  min-height: 44px;
   cursor: pointer;
   border: 1px solid #555;
   background: #333;
@@ -602,7 +639,8 @@ h1 {
 
 .mode-btn {
   font-size: 1rem;
-  padding: 0.4rem 1.2rem;
+  padding: 0.6rem 1.2rem;
+  min-height: 44px;
   cursor: pointer;
   border: 1px solid #555;
   background: #333;
@@ -633,10 +671,16 @@ h1 {
   margin-bottom: 1rem;
 }
 
+.control-label {
+  color: #ccc;
+  font-size: 0.9rem;
+}
+
 .controls select,
 .controls button {
   font-size: 1rem;
-  padding: 0.4rem 0.8rem;
+  padding: 0.6rem 0.9rem;
+  min-height: 44px;
   cursor: pointer;
 }
 
@@ -672,7 +716,8 @@ h1 {
 
 .reveal-container button {
   font-size: 1rem;
-  padding: 0.4rem 1.2rem;
+  padding: 0.6rem 1.2rem;
+  min-height: 44px;
   cursor: pointer;
 }
 

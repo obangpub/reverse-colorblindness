@@ -19,7 +19,7 @@ import {
 
 export interface RunnerCallbacks {
   onComplete: (session: TestSession) => void;
-  onRestart: () => void;
+  onExit: () => void;
 }
 
 const PLATE_DISPLAY_SIZE = 400;
@@ -33,12 +33,24 @@ export function mount(
   const root = document.createElement("div");
   root.className = "view view-runner";
 
-  // Top bar: progress label + bar + restart link.
+  // Visually-hidden heading so screen-reader users know which view they're
+  // in. Focused on mount so screen readers announce the view transition.
+  const srHeading = document.createElement("h1");
+  srHeading.className = "sr-only";
+  srHeading.textContent = "Color vision test";
+  srHeading.tabIndex = -1;
+  root.appendChild(srHeading);
+
+  // Top bar: progress label + bar + exit link.
   const topBar = document.createElement("div");
   topBar.className = "runner-topbar";
 
+  // Progress label doubles as the ARIA live region: when its text updates
+  // ("Plate N of M"), screen readers announce the new plate.
   const progressLabel = document.createElement("div");
   progressLabel.className = "runner-progress-label";
+  progressLabel.setAttribute("aria-live", "polite");
+  progressLabel.setAttribute("aria-atomic", "true");
   topBar.appendChild(progressLabel);
 
   const progressBar = document.createElement("div");
@@ -55,28 +67,27 @@ export function mount(
   progressBar.appendChild(progressFill);
   topBar.appendChild(progressBar);
 
-  const restartBtn = document.createElement("button");
-  restartBtn.className = "runner-restart-link";
-  restartBtn.textContent = "Restart";
-  restartBtn.setAttribute(
+  const exitBtn = document.createElement("button");
+  exitBtn.className = "runner-restart-link";
+  exitBtn.textContent = "Exit test";
+  exitBtn.setAttribute(
     "aria-label",
-    "Restart the test, discarding current progress",
+    "Exit the test, discarding current progress",
   );
-  restartBtn.addEventListener("click", () => {
+  exitBtn.addEventListener("click", () => {
     const ok = window.confirm(
-      "Discard your current progress and restart the test?",
+      "Exit the test? Your current progress will be discarded.",
     );
-    if (ok) callbacks.onRestart();
+    if (ok) callbacks.onExit();
   });
-  topBar.appendChild(restartBtn);
+  topBar.appendChild(exitBtn);
 
   root.appendChild(topBar);
 
-  // Plate canvas.
+  // Plate canvas. (No aria-live here — the canvas itself can't be read
+  // aloud; we announce plate transitions via the progress label.)
   const plateContainer = document.createElement("div");
   plateContainer.className = "runner-plate-container";
-  plateContainer.setAttribute("aria-live", "polite");
-  plateContainer.setAttribute("aria-atomic", "true");
 
   const canvas = document.createElement("canvas");
   canvas.width = PLATE_DISPLAY_SIZE;
@@ -121,6 +132,7 @@ export function mount(
 
   root.appendChild(buttons);
   host.appendChild(root);
+  srHeading.focus();
 
   let busy = false;
   let pendingTimeout: number | null = null;

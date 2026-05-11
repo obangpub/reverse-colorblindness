@@ -56,6 +56,17 @@ function describeChoice(r: Response): string {
   return "you answered “not sure”";
 }
 
+function plainDeficiencyName(d: DeficiencyType): string {
+  switch (d) {
+    case "protanopia":
+      return "red-blind";
+    case "deuteranopia":
+      return "green-blind";
+    case "tritanopia":
+      return "blue-yellow blind";
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Modal
 // ---------------------------------------------------------------------------
@@ -93,7 +104,7 @@ function createModal(): PlateModal {
   triBtn.className = "plate-modal-toggle-btn active";
 
   const simBtn = document.createElement("button");
-  simBtn.textContent = "Simulated dichromat view";
+  simBtn.textContent = "How a colorblind viewer sees it";
   simBtn.className = "plate-modal-toggle-btn";
 
   toggle.appendChild(triBtn);
@@ -114,6 +125,9 @@ function createModal(): PlateModal {
 
   let currentResponse: Response | null = null;
   let simulate = false;
+  let previouslyFocused: HTMLElement | null = null;
+
+  const focusables = (): HTMLElement[] => [closeBtn, triBtn, simBtn];
 
   const redraw = (): void => {
     if (!currentResponse) return;
@@ -134,14 +148,40 @@ function createModal(): PlateModal {
   const hide = (): void => {
     overlay.classList.add("hidden");
     currentResponse = null;
+    // Restore focus to whatever triggered the modal.
+    if (previouslyFocused && previouslyFocused.isConnected) {
+      previouslyFocused.focus();
+    }
+    previouslyFocused = null;
   };
 
   closeBtn.addEventListener("click", hide);
   overlay.addEventListener("click", hide);
 
+  // Focus trap: Tab and Shift+Tab cycle within the modal's focusables.
+  // Escape closes.
   const onKeydown = (e: KeyboardEvent): void => {
-    if (e.key === "Escape" && !overlay.classList.contains("hidden")) {
+    if (overlay.classList.contains("hidden")) return;
+    if (e.key === "Escape") {
+      e.preventDefault();
       hide();
+      return;
+    }
+    if (e.key !== "Tab") return;
+    const items = focusables();
+    if (items.length === 0) return;
+    const active = document.activeElement as HTMLElement | null;
+    const idx = active ? items.indexOf(active) : -1;
+    if (e.shiftKey) {
+      if (idx <= 0) {
+        e.preventDefault();
+        items[items.length - 1]!.focus();
+      }
+    } else {
+      if (idx === items.length - 1 || idx === -1) {
+        e.preventDefault();
+        items[0]!.focus();
+      }
     }
   };
   document.addEventListener("keydown", onKeydown);
@@ -149,16 +189,17 @@ function createModal(): PlateModal {
   return {
     element: overlay,
     show: (response) => {
+      previouslyFocused = document.activeElement as HTMLElement | null;
       currentResponse = response;
       const def = response.item.plate.deficiency;
-      title.textContent = `Hidden digit: ${response.item.plate.character}`;
-      simBtn.textContent = `Simulated ${def} view`;
+      title.textContent = `Hidden digit: ${response.item.plate.character} — ${plainDeficiencyName(def)} plate`;
 
       const status = response.correct ? "Read correctly" : "Not read";
       const choice = describeChoice(response);
       footer.innerHTML = `<span class="plate-modal-result ${response.correct ? "correct" : "incorrect"}">${response.correct ? "✓" : "✗"} ${status}</span> — ${choice}`;
       setSimulate(false);
       overlay.classList.remove("hidden");
+      closeBtn.focus();
     },
     hide,
     destroy: () => {
@@ -334,7 +375,7 @@ function makeRow(spec: RowSpec, modal: PlateModal): HTMLDivElement {
     readout.textContent =
       `${score.correct} of ${score.total} plates read ` +
       `(95% CI: ${score.ci.low.toFixed(2)}–${score.ci.high.toFixed(2)})` +
-      " — click any thumbnail to view";
+      " — click any plate to see it in full size";
   } else {
     readout.textContent = "No plates on this axis";
   }
@@ -364,6 +405,7 @@ export function mount(
 
   const heading = document.createElement("h1");
   heading.textContent = "Your test results";
+  heading.tabIndex = -1;
   root.appendChild(heading);
 
   const results = document.createElement("div");
@@ -406,15 +448,17 @@ export function mount(
   const caption = document.createElement("p");
   caption.className = "results-caption";
   caption.textContent =
-    "Each row records your responses on one axis of the test. The swatch " +
-    "pair shows two colors that look identical to viewers along that " +
-    "confusion line. The bar's two stripes start as those distinct colors " +
-    "(left, what a trichromat sees) and fade into a single tone (right, " +
-    "what a dichromat sees) — so the bar itself demonstrates the collapse. " +
-    "The shaded band on each bar is a 95% confidence interval; the marker " +
-    "is the point estimate. Click any thumbnail to view the plate at full " +
-    "size and toggle between trichromat and simulated views. " +
-    "For educational purposes — not a clinical assessment.";
+    "Each row shows your results for one part of the test. The two " +
+    "swatch colors are what gets confused along that axis — they look " +
+    "identical to a colorblind viewer. The bar shows what happens to " +
+    "those colors as vision shifts toward colorblindness: on the left, " +
+    "the two colors look distinct (what a typical viewer sees); on " +
+    "the right, they merge into one (what a colorblind viewer sees). " +
+    "The shaded band shows how much uncertainty is in your score; the " +
+    "white line is your best estimate. Click any plate to see it in " +
+    "full size and toggle between what you see and what a colorblind " +
+    "viewer sees. This is for learning about color vision, not for " +
+    "diagnosing anything.";
   root.appendChild(caption);
 
   const actions = document.createElement("div");
@@ -435,6 +479,7 @@ export function mount(
   root.appendChild(actions);
 
   host.appendChild(root);
+  heading.focus();
 
   return () => {
     modal.destroy();

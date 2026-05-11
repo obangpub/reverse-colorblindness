@@ -20,17 +20,17 @@ export function mount(
 
   const heading = document.createElement("h1");
   heading.textContent = "Reverse Colorblindness Test";
+  heading.tabIndex = -1;
   root.appendChild(heading);
 
   const lede = document.createElement("p");
   lede.className = "intro-lede";
   lede.textContent =
-    "A short test — 24 plates, three to five minutes. You'll look at " +
-    "dot patterns and identify any digit you see in each one. Some " +
-    "patterns hide a digit only viewers with color vision differences " +
-    "can read; others hide nothing at all. Your responses sketch a " +
-    "picture of how your color vision compares to typical-trichromat " +
-    "and full-dichromat references on this test.";
+    "A short test — 24 plates, three to five minutes. Each plate hides " +
+    "a digit that's easier to see if you're colorblind in certain ways. " +
+    "Most people with typical color vision can't see them at all. " +
+    "We'll show you where your color vision sits between typical and " +
+    "fully colorblind.";
   root.appendChild(lede);
 
   const example = document.createElement("section");
@@ -42,9 +42,10 @@ export function mount(
 
   const exampleDesc = document.createElement("p");
   exampleDesc.textContent =
-    "Each plate is a circle of colored dots. Look for a digit hidden in " +
-    "the pattern. Click the digit if you see one, or click “Not " +
-    "sure” if you don't.";
+    "Each plate is a circle of colored dots with a digit hidden in the " +
+    "pattern. Click the digit if you see one, or “Not sure” if you " +
+    "don't — which will often be the right answer. The example below " +
+    "is deliberately easier to read than the actual test plates.";
   example.appendChild(exampleDesc);
 
   const examplePlate = generateExamplePlate({ size: 320 });
@@ -70,9 +71,9 @@ export function mount(
   const disclaimer = document.createElement("p");
   disclaimer.className = "intro-disclaimer";
   disclaimer.textContent =
-    "This test depends on your screen's color rendering. Take it on a " +
-    "well-lit, calibrated display in normal lighting. For educational " +
-    "purposes only — not a clinical assessment.";
+    "Your screen affects the test. Take it on a well-lit, calibrated " +
+    "display in normal lighting. This is for learning about color " +
+    "vision, not for diagnosing anything.";
   root.appendChild(disclaimer);
 
   const actions = document.createElement("div");
@@ -93,6 +94,7 @@ export function mount(
   root.appendChild(actions);
 
   host.appendChild(root);
+  heading.focus();
 
   return () => {
     host.removeChild(root);

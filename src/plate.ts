@@ -174,11 +174,12 @@ function rgbToCSS(c: RGB): string {
 }
 
 /**
- * Generate a non-CVD-targeted demo plate where the digit is readable to
- * everyone. Background dots are a single uniform color (no chromatic
- * camouflage); figure dots carry a strong luminance offset. Used in the
- * test intro screen to demonstrate the task without exposing the user
- * to a real test plate.
+ * Generate a demo plate for the test intro. Uses softer confusion
+ * amplitude and a stronger signal than real test plates, so the
+ * figure is readable to trichromats and dichromats alike — but the
+ * dot-pattern aesthetic matches real plates closely enough that the
+ * user knows what to expect. Tuned to be visibly easier than the
+ * actual test (which is designed against trichromat reading).
  */
 export function generateExamplePlate(opts: PlateOptions = {}): PlateResult {
   const size = opts.size ?? 400;
@@ -198,12 +199,12 @@ export function generateExamplePlate(opts: PlateOptions = {}): PlateResult {
   const mask = createFigureMask(character, { width: size, height: size });
 
   const colored = colorDots(dots, mask, {
-    deficiency: "protanopia",
-    confusionAmplitude: 0,
-    signalAmplitude: 0.3,
+    deficiency: "deuteranopia",
+    confusionAmplitude: 0.1,
+    signalAmplitude: 0.2,
   });
 
-  return { character, deficiency: "protanopia", dots: colored, size };
+  return { character, deficiency: "deuteranopia", dots: colored, size };
 }
 
 /**

@@ -82,7 +82,7 @@ function navigate(next: View, session?: TestSession): void {
       cancelGeneration = startBackgroundGeneration(currentSession);
       currentUnmount = runnerView.mount(app, currentSession, {
         onComplete: (s) => navigate("results", s),
-        onRestart: () => navigate("intro"),
+        onExit: () => navigate("intro"),
       });
       break;
 
@@ -130,20 +130,37 @@ function setupDevToolbar(): void {
     navigate("results", generatePlaceholderSession());
   });
 
+  const clearBtn = document.createElement("button");
+  clearBtn.textContent = "Clear output";
+  clearBtn.className = "hidden";
+  clearBtn.setAttribute("aria-label", "Clear calibration output");
+
   const calibOutput = document.createElement("pre");
   calibOutput.className = "dev-toolbar-output hidden";
+
+  const showOutput = (text: string): void => {
+    calibOutput.textContent = text;
+    calibOutput.classList.remove("hidden");
+    clearBtn.classList.remove("hidden");
+  };
+
+  const clearOutput = (): void => {
+    calibOutput.textContent = "";
+    calibOutput.classList.add("hidden");
+    clearBtn.classList.add("hidden");
+  };
+
+  clearBtn.addEventListener("click", clearOutput);
 
   calibBtn.addEventListener("click", () => {
     calibBtn.disabled = true;
     calibBtn.textContent = "Running...";
-    calibOutput.textContent = "";
-    calibOutput.classList.remove("hidden");
+    showOutput("");
     setTimeout(() => {
       const t0 = performance.now();
       const result = runCalibration();
       const elapsed = ((performance.now() - t0) / 1000).toFixed(1);
-      calibOutput.textContent =
-        formatCalibrationReport(result) + `\n\n(${elapsed}s)`;
+      showOutput(formatCalibrationReport(result) + `\n\n(${elapsed}s)`);
       calibBtn.disabled = false;
       calibBtn.textContent = "Run calibration";
     }, 50);
@@ -151,6 +168,7 @@ function setupDevToolbar(): void {
 
   bar.appendChild(calibBtn);
   bar.appendChild(previewBtn);
+  bar.appendChild(clearBtn);
   bar.appendChild(calibOutput);
 
   document.body.appendChild(bar);

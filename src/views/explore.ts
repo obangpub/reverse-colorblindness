@@ -56,6 +56,7 @@ export function mount(
 
   const heading = document.createElement("h1");
   heading.textContent = "Plate generator";
+  heading.tabIndex = -1;
   root.appendChild(heading);
 
   const info = document.createElement("p");
@@ -90,13 +91,19 @@ export function mount(
   const controls = document.createElement("div");
   controls.className = "controls";
 
+  const deficiencyLabel = document.createElement("label");
+  deficiencyLabel.htmlFor = "deficiency-select";
+  deficiencyLabel.textContent = "Target:";
+  deficiencyLabel.className = "control-label";
+  controls.appendChild(deficiencyLabel);
+
   const deficiencySelect = document.createElement("select");
-  deficiencySelect.setAttribute("aria-label", "Target deficiency");
+  deficiencySelect.id = "deficiency-select";
   const deficiencyOptions: Array<{ value: string; label: string }> = [
     { value: "random", label: "Surprise me" },
-    { value: "protanopia", label: "Protanopia (red-blind)" },
-    { value: "deuteranopia", label: "Deuteranopia (green-blind)" },
-    { value: "tritanopia", label: "Tritanopia (blue-blind)" },
+    { value: "protanopia", label: "Red-blind (protanopia)" },
+    { value: "deuteranopia", label: "Green-blind (deuteranopia)" },
+    { value: "tritanopia", label: "Blue-yellow blind (tritanopia)" },
   ];
   for (const opt of deficiencyOptions) {
     const el = document.createElement("option");
@@ -292,6 +299,7 @@ export function mount(
   });
 
   host.appendChild(root);
+  heading.focus();
   updatePlateDisplaySize();
 
   // Generate an initial plate.
