@@ -1,31 +1,28 @@
 /**
- * Test result display.
+ * Results view: per-axis bars, plate thumbnails with click-to-enlarge,
+ * and navigation to restart or move to explore mode.
  *
- * Two stacked horizontal rows, one per axis (red-green, blue-yellow).
- * Each row contains:
- *
- *   - Axis title with inline labeled swatch pair
- *   - A two-stripe bar that demonstrates the confusion: the left end
- *     shows the two confused colors stacked; the right end shows what
- *     those colors collapse to under the relevant simulation. To a
- *     trichromat the stripes start distinct and fade into one; to a
- *     dichromat the whole bar is uniform. The user's position marker
- *     shows where their responses land between the trichromat reference
- *     (left) and dichromat reference (right).
- *   - A strip of plate thumbnails. Click a thumbnail to open a modal
- *     showing the plate at full size with a toggle between trichromat
- *     view and simulated-dichromat view.
+ * Each axis is rendered as a two-stripe bar where the left edge shows
+ * the two confused colors and the right edge shows their post-simulation
+ * collapse. A translucent band marks the Wilson 95% confidence interval
+ * around the user's score.
  */
 
-import type { RGB, DeficiencyType } from "./cvd";
-import { simulateCVD } from "./cvd";
-import { confusionPair } from "./color";
-import { generateAcceptedPlate, drawPlate } from "./plate";
-import type { AcceptedPlateResult } from "./plate";
+import type { RGB, DeficiencyType } from "../cvd";
+import { simulateCVD } from "../cvd";
+import { confusionPair } from "../color";
+import { drawPlate } from "../plate";
+import type { Axis, Response, TestSession } from "../test-session";
+import { scoreAxis } from "../test-session";
 
 const SWATCH_BASE: RGB = { r: 0.55, g: 0.45, b: 0.4 };
 const SWATCH_AMPLITUDE = 0.5;
 const PLATE_SIZE = 400;
+
+export interface ResultsCallbacks {
+  onRestart: () => void;
+  onExplore: () => void;
+}
 
 function rgbToCss(c: RGB): string {
   return `rgb(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)})`;
@@ -47,69 +44,16 @@ function blueYellowPair(): { blue: RGB; yellow: RGB } {
   return a.b > b.b ? { blue: a, yellow: b } : { blue: b, yellow: a };
 }
 
-export interface PlateRecord {
-  plate: AcceptedPlateResult;
-  correct: boolean;
+function responsesForAxis(
+  session: TestSession,
+  axis: Axis,
+): Response[] {
+  return session.responses.filter((r) => r.item.axis === axis);
 }
 
-export interface ResultsOptions {
-  /** Red-green score in [0, 1]. If absent, derived from rgRecords. */
-  rg?: number;
-  /** Blue-yellow score in [0, 1]. If absent, derived from byRecords. */
-  by?: number;
-  /** Plates and per-plate correctness for the red-green battery. */
-  rgRecords?: PlateRecord[];
-  /** Plates and per-plate correctness for the blue-yellow battery. */
-  byRecords?: PlateRecord[];
-}
-
-/**
- * Generate a placeholder battery of real plates plus arbitrary
- * correctness flags. For the prototype only — the real flow will pass
- * actual records collected during a user test session.
- */
-export function generatePlaceholderRecords(): {
-  rg: PlateRecord[];
-  by: PlateRecord[];
-} {
-  const rgDefs: DeficiencyType[] = [
-    "protanopia",
-    "protanopia",
-    "protanopia",
-    "deuteranopia",
-    "deuteranopia",
-    "deuteranopia",
-  ];
-  const rgCorrect = [true, false, true, true, false, true];
-  const byCorrect = [false, false, true, false, false, false];
-
-  const rg = rgDefs.map((d, i) => ({
-    plate: generateAcceptedPlate({ size: PLATE_SIZE, deficiency: d }),
-    correct: rgCorrect[i]!,
-  }));
-  const by = byCorrect.map((c) => ({
-    plate: generateAcceptedPlate({
-      size: PLATE_SIZE,
-      deficiency: "tritanopia",
-    }),
-    correct: c,
-  }));
-
-  return { rg, by };
-}
-
-interface ColorWithLabel {
-  color: RGB;
-  label: string;
-}
-
-interface RowSpec {
-  axisTitle: string;
-  deficiency: DeficiencyType;
-  topColor: ColorWithLabel;
-  bottomColor: ColorWithLabel;
-  records: PlateRecord[];
-  score: number;
+function describeChoice(r: Response): string {
+  if (r.choice.type === "digit") return `you answered ${r.choice.value}`;
+  return "you answered “not sure”";
 }
 
 // ---------------------------------------------------------------------------
@@ -118,8 +62,9 @@ interface RowSpec {
 
 interface PlateModal {
   element: HTMLDivElement;
-  show: (record: PlateRecord) => void;
+  show: (response: Response) => void;
   hide: () => void;
+  destroy: () => void;
 }
 
 function createModal(): PlateModal {
@@ -167,13 +112,13 @@ function createModal(): PlateModal {
 
   overlay.appendChild(content);
 
-  let currentRecord: PlateRecord | null = null;
+  let currentResponse: Response | null = null;
   let simulate = false;
 
   const redraw = (): void => {
-    if (!currentRecord) return;
+    if (!currentResponse) return;
     const ctx = canvas.getContext("2d")!;
-    drawPlate(ctx, currentRecord.plate, simulate);
+    drawPlate(ctx, currentResponse.item.plate, simulate);
   };
 
   const setSimulate = (v: boolean): void => {
@@ -188,35 +133,57 @@ function createModal(): PlateModal {
 
   const hide = (): void => {
     overlay.classList.add("hidden");
-    currentRecord = null;
+    currentResponse = null;
   };
 
   closeBtn.addEventListener("click", hide);
   overlay.addEventListener("click", hide);
-  document.addEventListener("keydown", (e) => {
+
+  const onKeydown = (e: KeyboardEvent): void => {
     if (e.key === "Escape" && !overlay.classList.contains("hidden")) {
       hide();
     }
-  });
+  };
+  document.addEventListener("keydown", onKeydown);
 
   return {
     element: overlay,
-    show: (record) => {
-      currentRecord = record;
-      title.textContent = `Hidden digit: ${record.plate.character}`;
-      simBtn.textContent = `Simulated ${record.plate.deficiency} view`;
-      const status = record.correct ? "Read correctly" : "Not read";
-      footer.innerHTML = `<span class="plate-modal-result ${record.correct ? "correct" : "incorrect"}">${record.correct ? "✓" : "✗"} ${status}</span>`;
+    show: (response) => {
+      currentResponse = response;
+      const def = response.item.plate.deficiency;
+      title.textContent = `Hidden digit: ${response.item.plate.character}`;
+      simBtn.textContent = `Simulated ${def} view`;
+
+      const status = response.correct ? "Read correctly" : "Not read";
+      const choice = describeChoice(response);
+      footer.innerHTML = `<span class="plate-modal-result ${response.correct ? "correct" : "incorrect"}">${response.correct ? "✓" : "✗"} ${status}</span> — ${choice}`;
       setSimulate(false);
       overlay.classList.remove("hidden");
     },
     hide,
+    destroy: () => {
+      document.removeEventListener("keydown", onKeydown);
+      if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+    },
   };
 }
 
 // ---------------------------------------------------------------------------
 // Row construction
 // ---------------------------------------------------------------------------
+
+interface ColorWithLabel {
+  color: RGB;
+  label: string;
+}
+
+interface RowSpec {
+  axisTitle: string;
+  deficiency: DeficiencyType;
+  topColor: ColorWithLabel;
+  bottomColor: ColorWithLabel;
+  responses: Response[];
+}
 
 function makeSwatch(color: RGB, label: string): HTMLSpanElement {
   const wrap = document.createElement("span");
@@ -248,7 +215,7 @@ function makeStripe(
 }
 
 function makeThumbnail(
-  record: PlateRecord,
+  response: Response,
   modal: PlateModal,
 ): HTMLDivElement {
   const wrap = document.createElement("div");
@@ -257,23 +224,22 @@ function makeThumbnail(
   wrap.setAttribute("tabindex", "0");
   wrap.setAttribute(
     "aria-label",
-    `Plate, ${record.correct ? "read correctly" : "not read"}. Click to enlarge.`,
+    `Plate, ${response.correct ? "read correctly" : "not read"}. Click to enlarge.`,
   );
 
   const canvas = document.createElement("canvas");
   canvas.width = PLATE_SIZE;
   canvas.height = PLATE_SIZE;
   canvas.className = "result-thumb-canvas";
-  const ctx = canvas.getContext("2d")!;
-  drawPlate(ctx, record.plate, false);
+  drawPlate(canvas.getContext("2d")!, response.item.plate, false);
   wrap.appendChild(canvas);
 
   const mark = document.createElement("span");
-  mark.className = `result-thumb-mark ${record.correct ? "correct" : "incorrect"}`;
-  mark.textContent = record.correct ? "✓" : "✗";
+  mark.className = `result-thumb-mark ${response.correct ? "correct" : "incorrect"}`;
+  mark.textContent = response.correct ? "✓" : "✗";
   wrap.appendChild(mark);
 
-  const open = (): void => modal.show(record);
+  const open = (): void => modal.show(response);
   wrap.addEventListener("click", open);
   wrap.addEventListener("keydown", (e) => {
     if (e.key === "Enter" || e.key === " ") {
@@ -329,9 +295,28 @@ function makeRow(spec: RowSpec, modal: PlateModal): HTMLDivElement {
     ),
   );
 
+  // Wilson 95% CI shaded band.
+  const score = scoreAxis(
+    spec.responses,
+    spec.responses[0]?.item.axis ?? "rg",
+  );
+  if (score.total > 0) {
+    const ciBand = document.createElement("div");
+    ciBand.className = "result-bar-ci";
+    const lowPct = clamp01(score.ci.low) * 100;
+    const widthPct = (clamp01(score.ci.high) - clamp01(score.ci.low)) * 100;
+    ciBand.style.left = `${lowPct}%`;
+    ciBand.style.width = `${widthPct}%`;
+    ciBand.setAttribute(
+      "aria-label",
+      `95% confidence interval: ${score.ci.low.toFixed(2)} to ${score.ci.high.toFixed(2)}`,
+    );
+    track.appendChild(ciBand);
+  }
+
   const marker = document.createElement("div");
   marker.className = "result-bar-marker";
-  marker.style.left = `${clamp01(spec.score) * 100}%`;
+  marker.style.left = `${clamp01(score.proportion) * 100}%`;
   track.appendChild(marker);
 
   bar.appendChild(track);
@@ -345,14 +330,20 @@ function makeRow(spec: RowSpec, modal: PlateModal): HTMLDivElement {
 
   const readout = document.createElement("div");
   readout.className = "result-readout";
-  const correctCount = spec.records.filter((r) => r.correct).length;
-  readout.textContent = `${correctCount} of ${spec.records.length} plates read — click a thumbnail to view`;
+  if (score.total > 0) {
+    readout.textContent =
+      `${score.correct} of ${score.total} plates read ` +
+      `(95% CI: ${score.ci.low.toFixed(2)}–${score.ci.high.toFixed(2)})` +
+      " — click any thumbnail to view";
+  } else {
+    readout.textContent = "No plates on this axis";
+  }
   row.appendChild(readout);
 
   const thumbs = document.createElement("div");
   thumbs.className = "result-thumbs";
-  for (const record of spec.records) {
-    thumbs.appendChild(makeThumbnail(record, modal));
+  for (const response of spec.responses) {
+    thumbs.appendChild(makeThumbnail(response, modal));
   }
   row.appendChild(thumbs);
 
@@ -360,59 +351,93 @@ function makeRow(spec: RowSpec, modal: PlateModal): HTMLDivElement {
 }
 
 // ---------------------------------------------------------------------------
-// Public entry
+// Public mount
 // ---------------------------------------------------------------------------
 
-export function createResults(opts: ResultsOptions = {}): HTMLDivElement {
-  const container = document.createElement("div");
-  container.className = "results";
+export function mount(
+  host: HTMLElement,
+  session: TestSession,
+  callbacks: ResultsCallbacks,
+): () => void {
+  const root = document.createElement("div");
+  root.className = "view view-results";
+
+  const heading = document.createElement("h1");
+  heading.textContent = "Your test results";
+  root.appendChild(heading);
+
+  const results = document.createElement("div");
+  results.className = "results";
 
   const { red, green } = redGreenPair();
   const { blue, yellow } = blueYellowPair();
 
-  const rgRecords = opts.rgRecords ?? [];
-  const byRecords = opts.byRecords ?? [];
-  const rgScore =
-    opts.rg ??
-    (rgRecords.length > 0
-      ? rgRecords.filter((r) => r.correct).length / rgRecords.length
-      : 0);
-  const byScore =
-    opts.by ??
-    (byRecords.length > 0
-      ? byRecords.filter((r) => r.correct).length / byRecords.length
-      : 0);
-
   const modal = createModal();
   document.body.appendChild(modal.element);
 
-  container.appendChild(
+  results.appendChild(
     makeRow(
       {
         axisTitle: "Red-green response",
         deficiency: "protanopia",
         topColor: { color: red, label: "Red" },
         bottomColor: { color: green, label: "Green" },
-        records: rgRecords,
-        score: rgScore,
+        responses: responsesForAxis(session, "rg"),
       },
       modal,
     ),
   );
 
-  container.appendChild(
+  results.appendChild(
     makeRow(
       {
         axisTitle: "Blue-yellow response",
         deficiency: "tritanopia",
         topColor: { color: blue, label: "Blue" },
         bottomColor: { color: yellow, label: "Yellow" },
-        records: byRecords,
-        score: byScore,
+        responses: responsesForAxis(session, "by"),
       },
       modal,
     ),
   );
 
-  return container;
+  root.appendChild(results);
+
+  const caption = document.createElement("p");
+  caption.className = "results-caption";
+  caption.textContent =
+    "Each row records your responses on one axis of the test. The swatch " +
+    "pair shows two colors that look identical to viewers along that " +
+    "confusion line. The bar's two stripes start as those distinct colors " +
+    "(left, what a trichromat sees) and fade into a single tone (right, " +
+    "what a dichromat sees) — so the bar itself demonstrates the collapse. " +
+    "The shaded band on each bar is a 95% confidence interval; the marker " +
+    "is the point estimate. Click any thumbnail to view the plate at full " +
+    "size and toggle between trichromat and simulated views. " +
+    "For educational purposes — not a clinical assessment.";
+  root.appendChild(caption);
+
+  const actions = document.createElement("div");
+  actions.className = "results-actions";
+
+  const restartBtn = document.createElement("button");
+  restartBtn.className = "btn-primary";
+  restartBtn.textContent = "Take test again";
+  restartBtn.addEventListener("click", callbacks.onRestart);
+  actions.appendChild(restartBtn);
+
+  const exploreBtn = document.createElement("button");
+  exploreBtn.className = "btn-secondary";
+  exploreBtn.textContent = "Explore plate generator";
+  exploreBtn.addEventListener("click", callbacks.onExplore);
+  actions.appendChild(exploreBtn);
+
+  root.appendChild(actions);
+
+  host.appendChild(root);
+
+  return () => {
+    modal.destroy();
+    host.removeChild(root);
+  };
 }
