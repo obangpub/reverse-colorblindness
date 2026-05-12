@@ -23,6 +23,7 @@ import {
   generatePlaceholderSession,
 } from "./test-session";
 import { runCalibration, formatCalibrationReport } from "./calibrate";
+import { recordEvent } from "./telemetry";
 
 type View = "intro" | "running" | "results" | "explore" | "about";
 
@@ -70,9 +71,18 @@ function navigate(next: View, session?: TestSession): void {
   switch (next) {
     case "intro":
       currentUnmount = introView.mount(app, {
-        onStart: () => navigate("running", newSession()),
-        onExplore: () => navigate("explore"),
-        onAbout: () => navigate("about"),
+        onStart: () => {
+          recordEvent("intro_action_start");
+          navigate("running", newSession());
+        },
+        onExplore: () => {
+          recordEvent("intro_action_explore");
+          navigate("explore");
+        },
+        onAbout: () => {
+          recordEvent("intro_action_about");
+          navigate("about");
+        },
       });
       break;
 
@@ -94,7 +104,10 @@ function navigate(next: View, session?: TestSession): void {
         return;
       }
       currentUnmount = resultsView.mount(app, currentSession, {
-        onRestart: () => navigate("running", newSession()),
+        onRestart: () => {
+          recordEvent("restart_clicked");
+          navigate("running", newSession());
+        },
         onExplore: () => navigate("explore"),
       });
       break;
@@ -115,9 +128,26 @@ function navigate(next: View, session?: TestSession): void {
 }
 
 navigate("intro");
+mountPrivacyFooter();
 
 if (DEV_MODE) {
   setupDevToolbar();
+}
+
+/**
+ * Render a persistent privacy disclosure at the bottom of the page when
+ * telemetry is enabled. Hidden entirely when VITE_TELEMETRY_URL is unset
+ * (dev / forks / CI) so we never claim to collect data we aren't.
+ */
+function mountPrivacyFooter(): void {
+  if (!import.meta.env.VITE_TELEMETRY_URL) return;
+  const footer = document.createElement("footer");
+  footer.className = "site-footer";
+  footer.textContent =
+    "This site records anonymous, aggregate counts of test responses to " +
+    "help improve the plate-generation algorithm. No personal data, IP " +
+    "addresses, cookies, or identifiers are collected or stored.";
+  document.body.appendChild(footer);
 }
 
 function setupDevToolbar(): void {

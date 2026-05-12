@@ -28,6 +28,10 @@ jobs:
           cache: pnpm
       - run: pnpm install --frozen-lockfile
       - run: pnpm run build
+        env:
+          # Set as a Repository Variable (Settings -> Secrets and variables ->
+          # Actions -> Variables). Unset => telemetry module is a no-op.
+          VITE_TELEMETRY_URL: ${{ vars.TELEMETRY_URL }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist

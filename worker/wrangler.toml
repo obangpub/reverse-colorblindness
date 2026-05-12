@@ -1,0 +1,15 @@
+name = "rcb-telemetry"
+main = "src/index.ts"
+compatibility_date = "2026-01-01"
+
+# Bind the KV namespace that holds counters. Create it once via:
+#   pnpm wrangler kv namespace create COUNTERS
+# and paste the returned id below. The preview_id is used by `wrangler dev`.
+[[kv_namespaces]]
+binding = "COUNTERS"
+id = "6c47d0f7ab374a91a54e064ad84bb901"
+preview_id = "93c92f5b8c314a95967a05ff9fdf61ee"
+
+# No logpush, no observability — we explicitly do not want per-request logs.
+[observability]
+enabled = false

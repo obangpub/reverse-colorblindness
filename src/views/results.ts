@@ -14,6 +14,7 @@ import { confusionPair } from "../color";
 import { drawPlate } from "../plate";
 import type { Axis, Response, TestSession } from "../test-session";
 import { scoreAxis } from "../test-session";
+import { recordEvent, recordTestSummary } from "../telemetry";
 
 const SWATCH_BASE: RGB = { r: 0.55, g: 0.45, b: 0.4 };
 const SWATCH_AMPLITUDE = 0.5;
@@ -189,6 +190,7 @@ function createModal(): PlateModal {
   return {
     element: overlay,
     show: (response) => {
+      recordEvent("modal_opened");
       previouslyFocused = document.activeElement as HTMLElement | null;
       currentResponse = response;
       const def = response.item.plate.deficiency;
@@ -482,6 +484,9 @@ export function mount(
 
   host.appendChild(root);
   heading.focus();
+
+  recordEvent("test_completed");
+  recordTestSummary(session);
 
   return () => {
     modal.destroy();

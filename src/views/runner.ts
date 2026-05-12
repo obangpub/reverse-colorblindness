@@ -16,6 +16,7 @@ import {
   progress,
   recordResponse,
 } from "../test-session";
+import { exitBucketEvent, recordEvent } from "../telemetry";
 
 export interface RunnerCallbacks {
   onComplete: (session: TestSession) => void;
@@ -78,7 +79,10 @@ export function mount(
     const ok = window.confirm(
       "Exit the test? Your current progress will be discarded.",
     );
-    if (ok) callbacks.onExit();
+    if (!ok) return;
+    const event = exitBucketEvent(progress(session).current);
+    if (event) recordEvent(event);
+    callbacks.onExit();
   });
   topBar.appendChild(exitBtn);
 
@@ -210,6 +214,7 @@ export function mount(
   };
   document.addEventListener("keydown", onKeydown);
 
+  recordEvent("test_started");
   render();
 
   return () => {
