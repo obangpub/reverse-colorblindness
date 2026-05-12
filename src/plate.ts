@@ -174,6 +174,40 @@ function rgbToCSS(c: RGB): string {
 }
 
 /**
+ * Generate a demo plate for the test intro. Uses softer confusion
+ * amplitude and a stronger signal than real test plates, so the
+ * figure is readable to trichromats and dichromats alike — but the
+ * dot-pattern aesthetic matches real plates closely enough that the
+ * user knows what to expect. Tuned to be visibly easier than the
+ * actual test (which is designed against trichromat reading).
+ */
+export function generateExamplePlate(opts: PlateOptions = {}): PlateResult {
+  const size = opts.size ?? 400;
+  const character = opts.character ?? randomDigit();
+  const radius = size / 2;
+
+  const dots = packDots({
+    cx: radius,
+    cy: radius,
+    plateRadius: radius * 0.92,
+    minRadius: size * 0.008,
+    maxRadius: size * 0.024,
+    padding: size * 0.003,
+    maxAttempts: 30_000,
+  });
+
+  const mask = createFigureMask(character, { width: size, height: size });
+
+  const colored = colorDots(dots, mask, {
+    deficiency: "deuteranopia",
+    confusionAmplitude: 0.1,
+    signalAmplitude: 0.2,
+  });
+
+  return { character, deficiency: "deuteranopia", dots: colored, size };
+}
+
+/**
  * Draw a plate's dots onto a canvas context.
  * Optionally simulate the target deficiency on each dot color.
  */

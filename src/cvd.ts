@@ -1,10 +1,16 @@
 /**
- * Color vision deficiency simulation using the Machado, Oliveira, Fernandes
- * (2009) physiologically-based model. Severity 1.0 matrices applied in
- * linear-sRGB space.
+ * Color vision deficiency simulation in linear-sRGB space.
  *
- * Copied from the sibling Cubehelix Studio project (../lumenfast). The two
- * projects are intentionally decoupled.
+ * Protanopia and deuteranopia: Machado, Oliveira, Fernandes (2009),
+ * severity 1.0. Copied from the sibling Cubehelix Studio project
+ * (../lumenfast); the two projects are intentionally decoupled.
+ *
+ * Tritanopia: Viénot, Brettel, Mollon (1999). The Machado tritanopia
+ * matrix at severity 1.0 is empirically rank 3 (det ≈ 0.24), so the
+ * cross-product confusion direction does not lie in its null space and
+ * confusion noise on tritan plates fails to fully collapse under
+ * simulation. Viénot/Brettel is rank 2 by construction (rows 1 and 2
+ * are identical), giving a clean null space.
  */
 
 export interface RGB {
@@ -29,9 +35,9 @@ const DEUTERANOPIA_MATRIX: readonly number[] = [
 ];
 
 const TRITANOPIA_MATRIX: readonly number[] = [
-  1.255528, -0.076749, -0.178779,
-  -0.078411, 0.930809, 0.147602,
-  0.004733, 0.691367, 0.3039,
+  1.0, 0.0, 0.0,
+  0.0, 0.7438, 0.2562,
+  0.0, 0.7438, 0.2562,
 ];
 
 export const DEFICIENCY_MATRICES: Record<DeficiencyType, readonly number[]> = {
