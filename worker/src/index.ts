@@ -56,6 +56,15 @@ const DIGITS = new Set(["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"]);
 const MAX_PLATES_PER_SUMMARY = 30;
 const SCORE_BUCKETS = ["0_2", "3_5", "6_8", "9_12"] as const;
 type ScoreBucket = (typeof SCORE_BUCKETS)[number];
+const NOT_SURE_BUCKETS = [
+  "0_2",
+  "3_5",
+  "6_8",
+  "9_12",
+  "13_18",
+  "19_24",
+] as const;
+type NotSureBucket = (typeof NOT_SURE_BUCKETS)[number];
 
 function monthKey(now: Date): string {
   return now.toISOString().slice(0, 7); // YYYY-MM
@@ -67,6 +76,18 @@ function scoreBucket(n: number): ScoreBucket | null {
   if (n <= 5) return "3_5";
   if (n <= 8) return "6_8";
   return "9_12";
+}
+
+// not_sure_count can span 0-24 (one per plate in the battery), so it uses a
+// wider bucket set than per-axis correct counts.
+function notSureBucket(n: number): NotSureBucket | null {
+  if (!Number.isInteger(n) || n < 0 || n > 24) return null;
+  if (n <= 2) return "0_2";
+  if (n <= 5) return "3_5";
+  if (n <= 8) return "6_8";
+  if (n <= 12) return "9_12";
+  if (n <= 18) return "13_18";
+  return "19_24";
 }
 
 async function increment(env: Env, key: string): Promise<void> {
@@ -155,7 +176,7 @@ async function handleSummary(
   if (!rg || !by) return;
   await increment(env, `summary:score:${rg}:${by}:${month}`);
 
-  const notSure = scoreBucket(payload.not_sure_count);
+  const notSure = notSureBucket(payload.not_sure_count);
   if (notSure) {
     await increment(env, `summary:not_sure:${notSure}:${month}`);
   }

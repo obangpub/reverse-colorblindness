@@ -31,7 +31,9 @@ KV keys are aggregate counters scoped by month:
 - `summary:not_sure:<bucket>:YYYY-MM`
 - `plate:<axis>:<deficiency>:<character>:<ratio_bucket>:<correct>:<choice>:YYYY-MM`
 
-Score buckets are `0_2 | 3_5 | 6_8 | 9_12`. Ratio buckets are
+Per-axis score buckets are `0_2 | 3_5 | 6_8 | 9_12`. The `not_sure` count
+can span 0-24 (one per plate in the battery) and uses
+`0_2 | 3_5 | 6_8 | 9_12 | 13_18 | 19_24`. Ratio buckets are
 `lt_1_5 | 1_5_2_0 | 2_0_2_5 | 2_5_plus`. Every value is whitelist-validated
 inside the Worker; unknown or out-of-range inputs are silently dropped.
 
