@@ -3,11 +3,131 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Reverse Ishihara Test — See What Colorblindness Uniquely Shows</title>
+    <meta
+      name="description"
+      content="A short online test using reverse Ishihara plates: hidden digits easier to see with color vision deficiency than typical color vision."
+    />
+    <meta name="author" content="Joseph Thiebes" />
+    <meta name="theme-color" content="#222222" />
+    <meta name="color-scheme" content="dark light" />
+
+    <link rel="canonical" href="https://obang.pub/cvd/" />
+
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <title>Reverse Colorblindness Test</title>
+    <link rel="apple-touch-icon" href="favicon.svg" />
+
+    <!-- Open Graph -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="Reverse Ishihara Test" />
+    <meta property="og:url" content="https://obang.pub/cvd/" />
+    <meta
+      property="og:title"
+      content="Reverse Ishihara Test — See What Colorblindness Uniquely Shows"
+    />
+    <meta
+      property="og:description"
+      content="A short online test using reverse Ishihara plates: hidden digits easier to see with color vision deficiency than typical color vision."
+    />
+    <meta property="og:image" content="https://obang.pub/cvd/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Reverse Ishihara plate — colored dots with a hidden digit easier to see with color vision deficiency"
+    />
+    <meta property="og:locale" content="en_US" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta
+      name="twitter:title"
+      content="Reverse Ishihara Test — See What Colorblindness Uniquely Shows"
+    />
+    <meta
+      name="twitter:description"
+      content="A short online test using reverse Ishihara plates: hidden digits easier to see with color vision deficiency than typical color vision."
+    />
+    <meta name="twitter:image" content="https://obang.pub/cvd/og-image.png" />
+    <meta
+      name="twitter:image:alt"
+      content="Reverse Ishihara plate — colored dots with a hidden digit easier to see with color vision deficiency"
+    />
+
+    <!-- Structured data -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "Reverse Ishihara Test",
+        "alternateName": "Reverse Colorblindness Test",
+        "url": "https://obang.pub/cvd/",
+        "description": "A short online test using reverse Ishihara plates: hidden digits easier to see with color vision deficiency than typical color vision.",
+        "applicationCategory": "EducationalApplication",
+        "operatingSystem": "Any (web)",
+        "browserRequirements": "Requires JavaScript and a modern browser with HTML5 canvas support.",
+        "isAccessibleForFree": true,
+        "inLanguage": "en",
+        "about": {
+          "@type": "Thing",
+          "name": "Color vision deficiency",
+          "sameAs": "https://en.wikipedia.org/wiki/Color_blindness"
+        },
+        "author": {
+          "@type": "Person",
+          "name": "Joseph Thiebes"
+        }
+      }
+    </script>
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <noscript>
+        <article style="max-width: 720px; margin: 2rem auto; padding: 1rem; color: #ddd; font-family: system-ui, sans-serif; line-height: 1.6;">
+          <h1>Reverse Ishihara Test</h1>
+          <p>
+            This test uses reverse Ishihara plates: dot-pattern images with a
+            digit hidden inside. Standard Ishihara plates show digits that are
+            easy to read with typical color vision and hard to read with
+            red-green colorblindness. Reverse plates invert that — the digit is
+            easier to see for someone with a specific color vision deficiency
+            and difficult or impossible to see for typical viewers.
+          </p>
+          <h2>Why reverse plates exist</h2>
+          <p>
+            Standard plates are easy to fail by simply saying "I don't see
+            anything," which makes them weak evidence on their own when there
+            is any motivation to claim color vision deficiency. Reverse plates
+            flip the burden: someone who claims colorblindness should be able
+            to read the matching plate. Used together, the two directions
+            carry more evidence than either alone — a property used in some
+            occupational and forensic screening for malingering.
+          </p>
+          <h2>How it works</h2>
+          <p>
+            Each plate is a circle of colored dots. Background dots are placed
+            on a confusion line — colors that collapse into one shade for a
+            specific deficiency (protanopia, deuteranopia, or tritanopia).
+            Figure dots are offset perpendicular to that line, in chromatic
+            dimensions the affected viewer can still discriminate. Trichromats
+            see chromatic noise; dichromats see the digit.
+          </p>
+          <h2>What this is not</h2>
+          <p>
+            This is not a diagnostic test. Screens vary widely in how they
+            reproduce color, ambient lighting matters, and a handful of plates
+            on a webpage cannot substitute for clinical instruments like an
+            anomaloscope or the HRR and Farnsworth tests. For a real
+            evaluation, see an eye doctor.
+          </p>
+          <p>
+            The interactive test requires JavaScript. Please enable it and
+            reload the page.
+          </p>
+        </article>
+      </noscript>
+    </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
 </html>

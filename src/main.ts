@@ -23,6 +23,7 @@ import {
   generatePlaceholderSession,
 } from "./test-session";
 import { runCalibration, formatCalibrationReport } from "./calibrate";
+import { downloadOGImage } from "./og-image";
 import { recordEvent } from "./telemetry";
 
 type View = "intro" | "running" | "results" | "explore" | "about";
@@ -204,8 +205,27 @@ function setupDevToolbar(): void {
     }, 50);
   });
 
+  const ogBtn = document.createElement("button");
+  ogBtn.textContent = "Generate OG image";
+  ogBtn.setAttribute(
+    "aria-label",
+    "Generate and download a 1200x630 PNG suitable for public/og-image.png",
+  );
+  ogBtn.addEventListener("click", () => {
+    ogBtn.disabled = true;
+    ogBtn.textContent = "Generating...";
+    // Defer so the disabled/label update paints before the synchronous
+    // plate generation blocks the main thread.
+    setTimeout(() => {
+      downloadOGImage();
+      ogBtn.disabled = false;
+      ogBtn.textContent = "Generate OG image";
+    }, 50);
+  });
+
   bar.appendChild(calibBtn);
   bar.appendChild(previewBtn);
+  bar.appendChild(ogBtn);
   bar.appendChild(clearBtn);
   bar.appendChild(calibOutput);
 
