@@ -3,7 +3,7 @@
  * from the intro for users who want context beyond the short lede.
  */
 
-const REPO_URL = "https://github.com/obangpub/reverse-colorblindness";
+const REPO_URL = "https://github.com/obangpub/cvd";
 
 export interface AboutCallbacks {
   onBack: () => void;

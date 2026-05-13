@@ -393,12 +393,45 @@ h1 {
    ========================================================================== */
 
 .view-results {
-  max-width: 760px;
+  max-width: 1080px;
   margin: 0 auto;
 }
 
 .view-results h1 {
   margin-bottom: 1rem;
+}
+
+.results-layout {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.results-main {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.results-share {
+  flex: 0 0 360px;
+  position: sticky;
+  top: 1rem;
+}
+
+@media (max-width: 900px) {
+  .results-layout {
+    flex-direction: column;
+    gap: 1.5rem;
+  }
+
+  .results-share {
+    flex: 1 1 auto;
+    width: 100%;
+    position: static;
+    /* On narrow viewports, hoist the share above the bars so the action
+       is visible without scrolling past the full results breakdown. */
+    order: -1;
+  }
 }
 
 .results {
@@ -494,10 +527,12 @@ h1 {
 
 .result-bar-ci {
   position: absolute;
-  top: 0;
-  bottom: 0;
-  background: rgba(255, 255, 255, 0.18);
+  top: 50%;
+  height: 3px;
+  background: #fff;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.7);
   pointer-events: none;
+  transform: translateY(-50%);
 }
 
 .result-bar-marker {
@@ -586,6 +621,37 @@ h1 {
   gap: 0.75rem;
   flex-wrap: wrap;
   margin-top: 1.75rem;
+}
+
+/* Share section (right column on desktop, stacks below on mobile) */
+
+.share-heading {
+  margin: 0 0 0.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ddd;
+}
+
+.share-text-block {
+  margin: 0 0 1rem;
+  padding: 1rem 1.25rem;
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 4px;
+  font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  color: #ddd;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  text-align: center;
+}
+
+.share-actions-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  justify-content: center;
 }
 
 /* Plate modal (used by results) */
