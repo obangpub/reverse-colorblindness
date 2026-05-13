@@ -15,6 +15,11 @@ import { drawPlate } from "../plate";
 import type { Axis, Response, TestSession } from "../test-session";
 import { scoreAxis } from "../test-session";
 import { recordEvent, recordTestSummary } from "../telemetry";
+import {
+  formatShareText,
+  createShareActions,
+  type ShareActions,
+} from "../share-text";
 
 const SWATCH_BASE: RGB = { r: 0.55, g: 0.45, b: 0.4 };
 const SWATCH_AMPLITUDE = 0.5;
@@ -377,8 +382,7 @@ function makeRow(spec: RowSpec, modal: PlateModal): HTMLDivElement {
   if (score.total > 0) {
     readout.textContent =
       `${score.correct} of ${score.total} plates read ` +
-      `(95% CI: ${score.ci.low.toFixed(2)}–${score.ci.high.toFixed(2)})` +
-      " — click any plate to see it in full size";
+      "— click any plate to see it in full size";
   } else {
     readout.textContent = "No plates on this axis";
   }
@@ -446,24 +450,92 @@ export function mount(
     ),
   );
 
-  root.appendChild(results);
-
   const caption = document.createElement("p");
   caption.className = "results-caption";
   caption.textContent =
-    "Each row shows your results for one axis. The two swatch colors " +
-    "are what gets confused along that axis — they look identical to " +
-    "a viewer with the matching dichromacy. The bar's gradient shows " +
-    "those colors collapsing from distinct (left, typical view) to " +
-    "merged (right, dichromat view). The white marker is your score " +
-    "on this axis; the shaded band shows its uncertainty. A score " +
-    "near 'All read' means you read these plates the way a dichromat " +
-    "would — but it doesn't mean your vision is dichromatic, since " +
-    "milder, more common deficiencies often score close to 'None " +
-    "read' even when present. Click any plate to see it full size and " +
-    "toggle between views. This is for learning about color vision, " +
-    "not for diagnosing anything.";
-  root.appendChild(caption);
+    "The bar's gradient shows the two confused colors merging as the " +
+    "matching deficiency strengthens. The marker is your score; the " +
+    "crossbar shows uncertainty. A high score doesn't mean your " +
+    "vision is dichromatic — milder, more common deficiencies often " +
+    "score near 'None read' even when present. For learning about " +
+    "color vision, not diagnosis.";
+
+  // Two-column layout: bars + caption on left, share preview on right.
+  // Stacks to single column at narrower viewports (see CSS).
+  const layout = document.createElement("div");
+  layout.className = "results-layout";
+
+  const main = document.createElement("div");
+  main.className = "results-main";
+  main.appendChild(results);
+  main.appendChild(caption);
+  layout.appendChild(main);
+
+  const shareSection = document.createElement("section");
+  shareSection.className = "results-share";
+
+  const shareHeading = document.createElement("h2");
+  shareHeading.className = "share-heading";
+  shareHeading.textContent = "Share your result";
+  shareSection.appendChild(shareHeading);
+
+  const shareText = formatShareText(session);
+  const shareActions: ShareActions = createShareActions(shareText);
+
+  const shareTextBlock = document.createElement("pre");
+  shareTextBlock.className = "share-text-block";
+  shareTextBlock.textContent = shareText;
+  shareTextBlock.setAttribute("aria-label", "Shareable result text");
+  shareSection.appendChild(shareTextBlock);
+
+  const shareActionsRow = document.createElement("div");
+  shareActionsRow.className = "share-actions-row";
+
+  const copyBtn = document.createElement("button");
+  copyBtn.className = "btn-primary";
+  copyBtn.textContent = "Copy";
+  shareActionsRow.appendChild(copyBtn);
+
+  const shareNativeBtn = document.createElement("button");
+  shareNativeBtn.className = "btn-secondary";
+  shareNativeBtn.textContent = "Share";
+  if (!shareActions.canShareNative) shareNativeBtn.classList.add("hidden");
+  shareActionsRow.appendChild(shareNativeBtn);
+
+  shareSection.appendChild(shareActionsRow);
+
+  layout.appendChild(shareSection);
+  root.appendChild(layout);
+
+  let copyResetTimeout: number | null = null;
+
+  copyBtn.addEventListener("click", () => {
+    shareActions
+      .copy()
+      .then(() => {
+        const original = "Copy";
+        copyBtn.textContent = "Copied!";
+        copyBtn.disabled = true;
+        if (copyResetTimeout !== null) {
+          clearTimeout(copyResetTimeout);
+        }
+        copyResetTimeout = window.setTimeout(() => {
+          copyBtn.textContent = original;
+          copyBtn.disabled = false;
+          copyResetTimeout = null;
+        }, 2000);
+      })
+      .catch((err: unknown) => {
+        console.error("Copy failed:", err);
+      });
+  });
+
+  shareNativeBtn.addEventListener("click", () => {
+    shareActions.shareNative().catch((err: unknown) => {
+      if (err instanceof Error && err.name === "AbortError") return;
+      console.error("Share failed:", err);
+    });
+  });
 
   const actions = document.createElement("div");
   actions.className = "results-actions";
@@ -489,6 +561,7 @@ export function mount(
   recordTestSummary(session);
 
   return () => {
+    if (copyResetTimeout !== null) clearTimeout(copyResetTimeout);
     modal.destroy();
     host.removeChild(root);
   };
