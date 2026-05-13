@@ -2,23 +2,31 @@
  * Share text: Wordle-style text representation of the user's results,
  * suitable for copy/paste into social posts.
  *
- * Each plate is a single emoji block: ⚫ for missed, ⚪ for read.
- * Blocks are grouped per axis in rows of 6 with a divider between
- * axes. Encoding is luminance-only (no chromatic distinction) so the
- * share remains legible to viewers with any form of color vision
- * deficiency — the population the test is about.
+ * Each plate is a single emoji block: ⬛ for missed, with the read
+ * symbol varying by axis (🟩 for red-green, 🟨 for blue-yellow). The
+ * axis-coded read color lets recipients see at a glance which axis
+ * the user did better on, while every read/miss pair retains a large
+ * luminance gap so the share remains legible to viewers with any
+ * form of color vision deficiency — the population the test is about.
  */
 
 import type { Axis, Response, TestSession } from "./test-session";
 
-const READ = "⚪";
-const MISS = "⚫";
+const MISS = "⬛";
+const READ: Record<Axis, string> = {
+  rg: "🟩",
+  by: "🟨",
+};
 const DIVIDER = "────────────";
 const SHARE_URL = "https://obang.pub/cvd/";
 const ROW_WIDTH = 6;
 
-function blocksForAxis(responses: readonly Response[]): string {
-  const blocks = responses.map((r) => (r.correct ? READ : MISS));
+function blocksForAxis(
+  axis: Axis,
+  responses: readonly Response[],
+): string {
+  const readSymbol = READ[axis];
+  const blocks = responses.map((r) => (r.correct ? readSymbol : MISS));
   const rows: string[] = [];
   for (let i = 0; i < blocks.length; i += ROW_WIDTH) {
     rows.push(blocks.slice(i, i + ROW_WIDTH).join(""));
@@ -41,10 +49,10 @@ export function formatShareText(session: TestSession): string {
     "Reverse Colorblindness Test",
     "",
     axisLabel("rg", rgRead, rgResponses.length),
-    blocksForAxis(rgResponses),
+    blocksForAxis("rg", rgResponses),
     DIVIDER,
     axisLabel("by", byRead, byResponses.length),
-    blocksForAxis(byResponses),
+    blocksForAxis("by", byResponses),
     "",
     SHARE_URL,
   ].join("\n");
